@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Concept LB Preview</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; background: #111; color: #eee; }
+    textarea { width: 100%; height: 200px; background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 10px; }
+    button { padding: 10px 20px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Concept LB — HTML Preview</h2>
+
+<textarea id="intake">
+{
+    "concept_name": "Bun and Bloom",
+    "one_liner": "A bright, playful burger bar with clean ingredients and fast service.",
+    "cuisine_type": "Modern burgers",
+    "service_model": "qsr",
+    "differentiator": "Pressed brioche buns, mess-free eating, premium sauces",
+    "city": "Beirut",
+    "neighborhood_type": "street",
+    "size_sqm": 35,
+    "seating_capacity": 18,
+    "alcohol_flag": false,
+    "target_audience": "Young professionals and foodies",
+    "price_positioning": "mid",
+    "meal_periods": [
+        "lunch",
+        "dinner"
+    ],
+    "competitors": [
+        "Classic Burger Joint",
+        "Local Smash Burger",
+        "Premium Sandwich Bar"
+    ],
+    "competitive_edge": "Cleaner execution, strong brand vibe, faster service",
+    "brand_personality_keywords": [
+        "bold",
+        "minimal",
+        "playful"
+    ],
+    "interior_mood_keywords": [
+        "bright",
+        "clean",
+        "modern"
+    ],
+    "beverage_direction": "coffee_focus",
+    "delivery_flag": true,
+    "operating_hours": "12:00-23:30",
+    "founder_background": "First-time founder with strong operations mindset",
+    "ownership_structure": "solo",
+    "budget_tier": "mid",
+    "experience_level": "some"
+}
+</textarea>
+
+<br>
+<button onclick="preview()">Preview (Cheap)</button>
+
+<button onclick="generateFull()">Generate Full Document</button>
+
+<script>
+async function preview() {
+  const intake = document.getElementById("intake").value;
+
+  const response = await fetch("/api/preview-html?chunk_size=6&preview_chunks=1", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: intake
+  });
+
+  const html = await response.text();
+
+  // Replace whole document with returned HTML
+  document.open();
+  document.write(html);
+  document.close();
+}
+</script>
+
+<script>
+async function generateFull() {
+  const intake = document.getElementById("intake").value;
+
+  const response = await fetch("/api/generate-html?chunk_size=6", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: intake
+  });
+
+  const html = await response.text();
+
+  document.open();
+  document.write(html);
+  document.close();
+}
+</script>
+
+</body>
+</html>

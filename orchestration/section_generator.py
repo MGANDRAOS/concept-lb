@@ -96,11 +96,11 @@ def generate_section(concept: Dict[str, Any], section_spec: Dict[str, Any]) -> D
             # We use the raw output if we can. But call_model_json raises before returning raw.
             # So we repair by asking the model to regenerate minimally using the spec as hint.
             expected_hint = f"""
-Expected JSON keys:
-- section.id must be "{section_spec['id']}"
-- section.title must be "{section_spec['title']}"
-- section.blocks must include types: {section_spec.get('required_blocks', [])}
-"""
+                Expected JSON keys:
+                - section.id must be "{section_spec['id']}"
+                - section.title must be "{section_spec['title']}"
+                - section.blocks must include types: {section_spec.get('required_blocks', [])}
+                """
             broken = (
                 "The previous output was invalid JSON or truncated. "
                 "Regenerate ONLY valid JSON for this section based on the concept and section spec."

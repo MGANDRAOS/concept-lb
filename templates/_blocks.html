@@ -1,0 +1,50 @@
+{# templates/_blocks.html #}
+{% macro render_block(block) %}
+  {% set t = block.get("type") %}
+
+  {% if t == "paragraph" %}
+    <p>{{ block.get("text", "") }}</p>
+
+  {% elif t == "bullets" %}
+    <ul>
+      {% for item in (block.get("items") or []) %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+  {% elif t == "callout" %}
+    <div class="callout">
+      {% if block.get("title") %}
+        <div class="callout-title">{{ block.get("title") }}</div>
+      {% endif %}
+      <div class="callout-text">{{ block.get("text", "") }}</div>
+    </div>
+
+  {% elif t == "table" %}
+    {% set cols = block.get("columns") or [] %}
+    {% set rows = block.get("rows") or [] %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {% for c in cols %}
+              <th>{{ c }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              {% for cell in (r or []) %}
+                <td>{{ cell }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% else %}
+    <pre class="unknown">{{ block }}</pre>
+  {% endif %}
+{% endmacro %}
