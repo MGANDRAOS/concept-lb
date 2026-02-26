@@ -150,6 +150,15 @@ Expected JSON:
         )
 
     sections = result.get("sections")
+    
+    expected_ids = [s["id"] for s in section_specs]
+    returned_ids = [s.get("id") for s in sections]
+
+    if returned_ids != expected_ids:
+        raise ValueError(
+            f"Section order mismatch. Expected {expected_ids}, got {returned_ids}"
+        )
+        
     if not isinstance(sections, list) or len(sections) == 0:
         raise ValueError("Bundle output missing non-empty 'sections'.")
 
@@ -183,5 +192,10 @@ Expected JSON:
             raise ValueError("Assumptions table missing or too small.")
         if not isinstance(disclaimer, str) or not disclaimer.strip():
             raise ValueError("Disclaimer missing.")
+        
+    if len(result["sections"]) != len(section_specs):
+        raise ValueError(
+            f"Model returned {len(result['sections'])} sections but expected {len(section_specs)}."
+        )    
 
     return result
