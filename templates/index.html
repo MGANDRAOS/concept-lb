@@ -57,35 +57,16 @@
 }
 </textarea>
 
-<br>
-<button onclick="preview()">Preview (Cheap)</button>
 
 <button onclick="generateFull()">Generate Full Document</button>
 
-<script>
-async function preview() {
-  const intake = document.getElementById("intake").value;
 
-  const response = await fetch("/api/preview-html?chunk_size=6&preview_chunks=1", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: intake
-  });
-
-  const html = await response.text();
-
-  // Replace whole document with returned HTML
-  document.open();
-  document.write(html);
-  document.close();
-}
-</script>
 
 <script>
 async function generateFull() {
   const intake = document.getElementById("intake").value;
 
-  const response = await fetch("/api/generate-html?chunk_size=6", {
+  const response = await fetch("/api/generate-html?chunk_size=6&max_workers=3", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: intake
