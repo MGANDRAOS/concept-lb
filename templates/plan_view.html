@@ -1,0 +1,153 @@
+{# templates/plan_view.html #}
+<!doctype html>
+<html lang="{{ plan.plan_meta.language or 'en' }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ plan.plan_meta.concept_name or "Concept Plan" }} — Concept LB</title>
+
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: #111823;
+      --text: #e8eef6;
+      --muted: #a9b4c3;
+      --line: rgba(255,255,255,0.08);
+      --accent: #7aa2ff;
+      --callout: rgba(122,162,255,0.12);
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+    .header {
+      background: linear-gradient(180deg, rgba(122,162,255,0.18), rgba(17,24,35,0));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 18px 14px;
+      margin-bottom: 18px;
+    }
+    .title {
+      font-size: 22px;
+      margin: 0 0 6px;
+      letter-spacing: 0.2px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+    }
+    .badge {
+      border: 1px solid var(--line);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin: 14px 0;
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+    }
+    p { margin: 10px 0; }
+    ul { margin: 10px 0 10px 18px; }
+    li { margin: 6px 0; }
+
+    .callout {
+      border: 1px solid var(--line);
+      background: var(--callout);
+      border-radius: 14px;
+      padding: 12px;
+      margin: 12px 0;
+    }
+    .callout-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      margin: 12px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: rgba(255,255,255,0.03);
+    }
+    tr:last-child td { border-bottom: none; }
+
+    .unknown {
+      background: rgba(255,0,0,0.08);
+      border: 1px solid rgba(255,0,0,0.15);
+      border-radius: 12px;
+      padding: 10px;
+      overflow-x: auto;
+    }
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 18px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  {% from "_blocks.html" import render_block %}
+
+  <div class="container">
+    <div class="header">
+      <h1 class="title">
+        {{ plan.plan_meta.concept_name or "Restaurant Concept Development Plan" }}
+      </h1>
+      <div class="meta">
+        <span class="badge">Country: {{ plan.plan_meta.country or "" }}</span>
+        <span class="badge">Currency: {{ plan.plan_meta.currency or "" }}</span>
+        <span class="badge">Language: {{ plan.plan_meta.language or "" }}</span>
+        <span class="badge">Created: {{ plan.plan_meta.created_at or "" }}</span>
+      </div>
+    </div>
+
+    {% for section in (plan.sections or []) %}
+      <section class="section" id="{{ section.id }}">
+        <h2>{{ section.title }}</h2>
+
+        {% for block in (section.blocks or []) %}
+          {{ render_block(block) }}
+        {% endfor %}
+      </section>
+    {% endfor %}
+
+    <div class="footer">Concept LB — HTML View</div>
+  </div>
+</body>
+</html>
