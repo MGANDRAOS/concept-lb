@@ -1,0 +1,128 @@
+{# templates/plans_list.html #}
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Plans — Concept LB</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #eee;
+      padding: 10px 8px;
+      text-align: left;
+    }
+
+    th {
+      background: #fafafa;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+    }
+
+    .rowlink {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    input {
+      padding: 8px;
+      width: 280px;
+    }
+
+    select {
+      padding: 8px;
+    }
+
+    button {
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <h2 style="margin:0;">Plans</h2>
+
+      <form method="GET" action="/plans" style="margin-left:auto; display:flex; gap:8px;">
+        <input name="q" placeholder="Search by title or id" value="{{ q or '' }}" />
+        <select name="status">
+          <option value="">All</option>
+          <option value="complete" {% if status=='complete' %}selected{% endif %}>complete</option>
+          <option value="failed" {% if status=='failed' %}selected{% endif %}>failed</option>
+          <option value="draft" {% if status=='draft' %}selected{% endif %}>draft</option>
+        </select>
+        <button type="submit">Filter</button>
+      </form>
+          <a href="/wizard" style="
+        margin-left:16px;
+        padding:8px 12px;
+        border:1px solid #111;
+        border-radius:8px;
+        text-decoration:none;
+        font-weight:600;
+        color:#111;
+     ">
+      Generate </a>
+  </div>
+
+  <p class="muted">Click any row to view the plan.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>ID</th>
+        <th>Export</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in plans %}
+      <tr>
+        <td>
+          <a class="rowlink" href="/plans/{{ p.id }}">
+            <strong>{{ p.title or ("Plan " ~ p.created_at) }}</strong>
+          </a>
+          <div class="muted">{{ p.locale or '' }} {{ p.mode or '' }} {{ p.model or '' }}</div>
+        </td>
+        <td><span class="badge">{{ p.status }}</span></td>
+        <td>{{ p.created_at }}</td>
+        <td class="muted">{{ p.id }}</td>
+        <td><a href="/plans/{{ p.id }}/export/pdf">PDF</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+
+</html>

@@ -36,7 +36,7 @@ class ConceptObject(BaseModel):
 
     alcohol_flag: bool
 
-    target_audience: str
+    target_audience: List[str]
     price_positioning: PricePositioning
     meal_periods: List[str]  # keep flexible: ["morning","lunch","dinner","late_night"]
 
