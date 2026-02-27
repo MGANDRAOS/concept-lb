@@ -50,7 +50,7 @@ SECTION_SPECS = [
      "style": "paragraph+bullets", "max_words": 260, "required_blocks": ["paragraph", "bullets"], "conditional": None},
 
     # 9.3
-    {"order": 12, "id": "menu_signature_items", "title": "By-the-Slice / Core Items",
+    {"order": 12, "id": "menu_signature_items", "title": "Core Items",
      "style": "paragraph+bullets+table", "max_words": 280, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None},
 
     # 9.4
