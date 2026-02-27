@@ -338,6 +338,9 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 @app.route("/api/generate-job", methods=["POST"])
 def generate_job():
     intake = request.get_json(force=True) or {}
+    print("=== /api/generate-job payload ===")
+    print(json.dumps(intake, ensure_ascii=False, indent=2)[:5000])
+    print("=== payload keys ===", list(intake.keys()))
     chunk_size = int(request.args.get("chunk_size", 6))
     max_workers = int(request.args.get("max_workers", 3))
 
