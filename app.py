@@ -3,7 +3,7 @@ import time
 import json
 import threading
 from datetime import datetime
-from flask import Flask,  request, render_template, jsonify   
+from flask import Flask,  request, render_template, jsonify, redirect   
 from flask_cors import CORS
 from config import Config
 from orchestration.normalization import normalize_intake
@@ -118,8 +118,12 @@ def generate_html():
 
 
 @app.route("/", methods=["GET"])
-def preview_page():
-    return render_template("index.html")
+def home():
+    return redirect("/wizard")
+
+@app.route("/wizard", methods=["GET"])
+def wizard():
+    return render_template("wizard.html")
 
 
 #Progress SSE Helpers
@@ -268,9 +272,11 @@ def generate_job():
 
     return jsonify({"job_id": job_id})
 
+
 @app.route("/jobs/<job_id>", methods=["GET"])
 def job_page(job_id: str):
     return render_template("job_status.html", job_id=job_id)
+
 
 @app.route("/jobs/<job_id>/view", methods=["GET"])
 def job_view(job_id: str):
