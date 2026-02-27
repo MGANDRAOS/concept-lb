@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generating… — Concept LB</title>
+  <style>
+    body { margin:0; font-family: system-ui, Arial; background:#0b0f14; color:#e8eef6; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px; }
+    .card { background:#111823; border:1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    .bar { height: 12px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow:hidden; }
+    .fill { height: 100%; width: 0%; background:#7aa2ff; transition: width .2s ease; }
+    .row { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top: 12px; flex-wrap:wrap; }
+    .hint { color:#a9b4c3; font-size: 13px; }
+    .status { font-size: 15px; margin-top: 10px; }
+    .log { margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px;
+           background:#0f1520; border:1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px; max-height: 260px; overflow:auto; white-space: pre-wrap; }
+    .btn { display:inline-block; background:#7aa2ff; color:#0b0f14; padding:10px 14px; border-radius: 12px; font-weight:700; text-decoration:none; }
+    .err { color:#ffb4b4; margin-top: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Generating…</h1>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+
+      <div class="row">
+        <div class="hint">Job: {{ job_id }}</div>
+        <div class="hint" id="pct">0%</div>
+      </div>
+
+      <div class="status" id="statusText">Starting…</div>
+      <div class="log" id="log"></div>
+      <div class="err" id="err"></div>
+
+      <div class="row" id="doneRow" style="display:none;">
+        <a class="btn" id="viewBtn" href="#">View Plan</a>
+        <a class="hint" href="/">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const jobId = "{{ job_id }}";
+    const fill = document.getElementById("fill");
+    const pct = document.getElementById("pct");
+    const statusText = document.getElementById("statusText");
+    const logEl = document.getElementById("log");
+    const errEl = document.getElementById("err");
+    const doneRow = document.getElementById("doneRow");
+    const viewBtn = document.getElementById("viewBtn");
+
+    function setProgress(p, text) {
+      const clamped = Math.max(0, Math.min(100, p));
+      fill.style.width = clamped + "%";
+      pct.textContent = clamped.toFixed(0) + "%";
+      if (text) statusText.textContent = text;
+    }
+
+    function addLog(line) {
+      logEl.textContent += (line + "\n");
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    const es = new EventSource(`/api/jobs/${jobId}/events`);
+
+    es.addEventListener("progress", (ev) => {
+      const data = JSON.parse(ev.data);
+      setProgress(data.percent || 0, data.message || "");
+      if (data.log) addLog(data.log);
+    });
+
+    es.addEventListener("done", (ev) => {
+      const data = JSON.parse(ev.data);
+      es.close();
+      setProgress(100, "Done ✅");
+
+      const viewUrl = data.view_url || `/jobs/${jobId}/view`;
+      viewBtn.href = viewUrl;
+      doneRow.style.display = "flex";
+
+      // auto-redirect after a short beat
+      setTimeout(() => { window.location.href = viewUrl; }, 600);
+    });
+
+    es.addEventListener("error", (ev) => {
+      // browser also fires "error" for reconnects; we handle explicit job errors via event "job_error"
+    });
+
+    es.addEventListener("job_error", (ev) => {
+      const data = JSON.parse(ev.data);
+      es.close();
+      errEl.textContent = data.error || "Unknown error";
+      statusText.textContent = "Failed ❌";
+      doneRow.style.display = "flex";
+      viewBtn.style.display = "none";
+    });
+  </script>
+</body>
+</html>
