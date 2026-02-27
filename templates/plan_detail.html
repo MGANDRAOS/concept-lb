@@ -1,0 +1,85 @@
+{# templates/plan_detail.html #}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ plan.title or plan.id }} — Concept LB</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      .top { display:flex; align-items:center; gap:12px; }
+      .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border:1px solid #ddd; }
+      .actions { margin-left:auto; display:flex; gap:10px; }
+      .btn { padding:8px 10px; border:1px solid #ddd; border-radius:8px; text-decoration:none; color:#111; }
+      pre { background:#fafafa; padding:12px; border:1px solid #eee; overflow:auto; }
+      .tabs { display:flex; gap:8px; margin:16px 0; }
+      .tab { padding:8px 10px; border:1px solid #ddd; border-radius: 999px; cursor:pointer; user-select:none; }
+      .tab.active { background:#111; color:#fff; border-color:#111; }
+      .panel { display:none; }
+      .panel.active { display:block; }
+      iframe { width: 100%; height: 80vh; border:1px solid #eee; }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <a href="/plans">← Plans</a>
+      <h2 style="margin:0;">{{ plan.title or plan.id }}</h2>
+      <span class="badge">{{ plan.status }}</span>
+
+      <div class="actions">
+        <a class="btn" href="/plans/{{ plan.id }}/export/pdf">Export PDF</a>
+      </div>
+    </div>
+
+    <p style="color:#666;">
+      Created: {{ plan.created_at }} • Updated: {{ plan.updated_at }} • Model: {{ plan.model or "" }} • Locale: {{ plan.locale or "" }}
+    </p>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="html">HTML Preview</div>
+      <div class="tab" data-tab="planjson">Plan JSON</div>
+      <div class="tab" data-tab="intake">Intake JSON</div>
+      <div class="tab" data-tab="normalized">Normalized Intake</div>
+    </div>
+
+    <div id="panel-html" class="panel active">
+      {% if plan.plan_html %}
+        <iframe srcdoc="{{ plan.plan_html | e }}"></iframe>
+      {% else %}
+        <p>No cached HTML for this plan.</p>
+      {% endif %}
+    </div>
+
+    <div id="panel-planjson" class="panel">
+      <pre>{{ (plan.plan or {}) | tojson(indent=2) }}</pre>
+    </div>
+
+    <div id="panel-intake" class="panel">
+      <pre>{{ (plan.intake or {}) | tojson(indent=2) }}</pre>
+    </div>
+
+    <div id="panel-normalized" class="panel">
+      <pre>{{ (plan.normalized_intake or {}) | tojson(indent=2) }}</pre>
+    </div>
+
+    <script>
+      const tabs = document.querySelectorAll(".tab");
+      const panels = {
+        html: document.getElementById("panel-html"),
+        planjson: document.getElementById("panel-planjson"),
+        intake: document.getElementById("panel-intake"),
+        normalized: document.getElementById("panel-normalized"),
+      };
+
+      tabs.forEach(t => {
+        t.addEventListener("click", () => {
+          tabs.forEach(x => x.classList.remove("active"));
+          Object.values(panels).forEach(p => p.classList.remove("active"));
+
+          t.classList.add("active");
+          const key = t.getAttribute("data-tab");
+          panels[key].classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>

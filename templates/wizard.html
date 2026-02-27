@@ -1,328 +1,491 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Concept LB — Wizard</title>
 
   <style>
-    :root{
-      --bg:#070A10;
-      --panel:#0E1422;
-      --panel2:#0B1020;
-      --stroke:rgba(255,255,255,.10);
-      --stroke2:rgba(255,255,255,.16);
-      --text:#EAF1FF;
-      --muted:#A9B6D3;
-      --muted2:#7E8AA8;
-      --brand:#7AA2FF;
-      --brand2:#4E7DFF;
-      --ok:#4ADE80;
-      --warn:#FBBF24;
-      --bad:#FF6B6B;
+    :root {
+      --bg: #070A10;
+      --panel: #0E1422;
+      --panel2: #0B1020;
+      --stroke: rgba(255, 255, 255, .10);
+      --stroke2: rgba(255, 255, 255, .16);
+      --text: #EAF1FF;
+      --muted: #A9B6D3;
+      --muted2: #7E8AA8;
+      --brand: #7AA2FF;
+      --brand2: #4E7DFF;
+      --ok: #4ADE80;
+      --warn: #FBBF24;
+      --bad: #FF6B6B;
 
-      --r12:12px;
-      --r16:16px;
-      --r20:20px;
+      --r12: 12px;
+      --r16: 16px;
+      --r20: 20px;
 
-      --shadow: 0 12px 30px rgba(0,0,0,.45);
-      --shadow2: 0 8px 18px rgba(0,0,0,.35);
+      --shadow: 0 12px 30px rgba(0, 0, 0, .45);
+      --shadow2: 0 8px 18px rgba(0, 0, 0, .35);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
 
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:var(--sans);
-      color:var(--text);
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
       background:
-        radial-gradient(1200px 700px at 20% -10%, rgba(122,162,255,.18), transparent 60%),
-        radial-gradient(900px 600px at 90% 0%, rgba(78,125,255,.12), transparent 60%),
-        radial-gradient(1000px 800px at 60% 120%, rgba(122,162,255,.10), transparent 60%),
+        radial-gradient(1200px 700px at 20% -10%, rgba(122, 162, 255, .18), transparent 60%),
+        radial-gradient(900px 600px at 90% 0%, rgba(78, 125, 255, .12), transparent 60%),
+        radial-gradient(1000px 800px at 60% 120%, rgba(122, 162, 255, .10), transparent 60%),
         var(--bg);
-      min-height:100vh;
+      min-height: 100vh;
     }
 
-    .wrap{ max-width:1100px; margin:0 auto; padding:28px 16px 48px; }
-
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px; margin-bottom:16px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px;
-    }
-    .logo{
-      width:36px; height:36px; border-radius:12px;
-      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(78,125,255,.75));
-      box-shadow: 0 10px 22px rgba(78,125,255,.22);
-    }
-    .title h1{ margin:0; font-size:18px; letter-spacing:.2px; }
-    .title .sub{ margin-top:2px; font-size:12px; color:var(--muted); }
-
-    .actions{
-      display:flex; gap:10px; align-items:center;
-    }
-    .ghost{
-      background:transparent;
-      border:1px solid var(--stroke);
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      cursor:pointer;
-      transition:.15s ease;
-    }
-    .ghost:hover{ border-color:var(--stroke2); transform: translateY(-1px); }
-    .pill{
-      font-size:12px; color:var(--muted);
-      border:1px solid var(--stroke);
-      padding:7px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,.03);
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
     }
 
-    .grid{
-      display:grid;
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(122, 162, 255, .95), rgba(78, 125, 255, .75));
+      box-shadow: 0 10px 22px rgba(78, 125, 255, .22);
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
+
+    .title .sub {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ghost {
+      background: transparent;
+      border: 1px solid var(--stroke);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .ghost:hover {
+      border-color: var(--stroke2);
+      transform: translateY(-1px);
+    }
+
+    .pill {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--stroke);
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .03);
+    }
+
+    .grid {
+      display: grid;
       grid-template-columns: 340px 1fr;
-      gap:14px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns:1fr; }
+      gap: 14px;
     }
 
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid var(--stroke);
-      border-radius:var(--r20);
+    @media (max-width: 980px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .02));
+      border: 1px solid var(--stroke);
+      border-radius: var(--r20);
       box-shadow: var(--shadow);
-      overflow:hidden;
+      overflow: hidden;
     }
-    .cardHeader{
-      padding:14px 14px 12px;
-      border-bottom:1px solid var(--stroke);
-      background: rgba(255,255,255,.02);
-    }
-    .cardHeader .h{ font-size:13px; color:var(--muted); letter-spacing:.3px; }
-    .cardHeader .k{ margin-top:6px; font-size:16px; color:var(--text); }
 
-    /* Stepper */
-    .steps{ padding:10px; }
-    .step{
-      display:flex; gap:10px; align-items:flex-start;
-      padding:12px 10px;
-      border-radius:14px;
-      cursor:pointer;
-      border:1px solid transparent;
-      transition:.15s ease;
+    .cardHeader {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--stroke);
+      background: rgba(255, 255, 255, .02);
     }
-    .step:hover{ background: rgba(255,255,255,.03); }
-    .step.active{
-      background: rgba(122,162,255,.10);
-      border-color: rgba(122,162,255,.22);
+
+    .cardHeader .h {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: .3px;
     }
-    .step.disabled{ opacity:.55; cursor:not-allowed; }
-    .dot{
-      width:26px; height:26px; border-radius:10px;
-      display:flex; align-items:center; justify-content:center;
-      background: rgba(255,255,255,.04);
-      border:1px solid var(--stroke);
-      color:var(--muted);
-      font-weight:700;
-      flex: 0 0 auto;
-      margin-top:1px;
-    }
-    .step.active .dot{
-      background: rgba(122,162,255,.20);
-      border-color: rgba(122,162,255,.35);
+
+    .cardHeader .k {
+      margin-top: 6px;
+      font-size: 16px;
       color: var(--text);
     }
-    .step.done .dot{
-      background: rgba(74,222,128,.12);
-      border-color: rgba(74,222,128,.25);
+
+    /* Stepper */
+    .steps {
+      padding: 10px;
+    }
+
+    .step {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: .15s ease;
+    }
+
+    .step:hover {
+      background: rgba(255, 255, 255, .03);
+    }
+
+    .step.active {
+      background: rgba(122, 162, 255, .10);
+      border-color: rgba(122, 162, 255, .22);
+    }
+
+    .step.disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--stroke);
+      color: var(--muted);
+      font-weight: 700;
+      flex: 0 0 auto;
+      margin-top: 1px;
+    }
+
+    .step.active .dot {
+      background: rgba(122, 162, 255, .20);
+      border-color: rgba(122, 162, 255, .35);
+      color: var(--text);
+    }
+
+    .step.done .dot {
+      background: rgba(74, 222, 128, .12);
+      border-color: rgba(74, 222, 128, .25);
       color: var(--ok);
     }
-    .step .meta{ min-width:0; }
-    .step .meta .t{ font-weight:700; font-size:13px; }
-    .step .meta .d{ margin-top:2px; font-size:12px; color:var(--muted); line-height:1.35; }
+
+    .step .meta {
+      min-width: 0;
+    }
+
+    .step .meta .t {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .step .meta .d {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
 
     /* Right panel */
-    .panel{
-      padding:18px;
+    .panel {
+      padding: 18px;
     }
-    .panelTop{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
-      margin-bottom:12px;
-    }
-    .panelTop h2{ margin:0; font-size:18px; }
-    .panelTop .desc{ margin-top:4px; color:var(--muted); font-size:13px; max-width: 58ch; }
 
-    .formGrid{
-      display:grid;
+    .panelTop {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panelTop h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panelTop .desc {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 58ch;
+    }
+
+    .formGrid {
+      display: grid;
       grid-template-columns: 1fr 1fr;
-      gap:12px;
-      margin-top:14px;
-    }
-    @media (max-width: 780px){
-      .formGrid{ grid-template-columns:1fr; }
+      gap: 12px;
+      margin-top: 14px;
     }
 
-    .field{
-      background: rgba(255,255,255,.02);
-      border:1px solid var(--stroke);
+    @media (max-width: 780px) {
+      .formGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      background: rgba(255, 255, 255, .02);
+      border: 1px solid var(--stroke);
       border-radius: var(--r16);
-      padding:12px;
+      padding: 12px;
       box-shadow: var(--shadow2);
     }
-    .field.wide{ grid-column: 1 / -1; }
-    .labelRow{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; margin-bottom:8px;
+
+    .field.wide {
+      grid-column: 1 / -1;
     }
-    label{
-      font-size:12px;
+
+    .labelRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    label {
+      font-size: 12px;
       color: var(--muted);
-      letter-spacing:.2px;
+      letter-spacing: .2px;
     }
-    .req{
-      font-size:11px;
-      color: rgba(255,255,255,.75);
-      background: rgba(255,255,255,.06);
+
+    .req {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .75);
+      background: rgba(255, 255, 255, .06);
       border: 1px solid var(--stroke);
       padding: 2px 8px;
       border-radius: 999px;
     }
 
-    input, textarea, select{
-      width:100%;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(9,12,22,.55);
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(9, 12, 22, .55);
       color: var(--text);
       border-radius: 12px;
       padding: 10px 11px;
-      outline:none;
+      outline: none;
       font-size: 13px;
-      transition:.15s ease;
-    }
-    textarea{ min-height: 96px; resize: vertical; }
-    input:focus, textarea:focus, select:focus{
-      border-color: rgba(122,162,255,.45);
-      box-shadow: 0 0 0 4px rgba(122,162,255,.12);
+      transition: .15s ease;
     }
 
-    .hint{
-      margin-top:8px;
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(122, 162, 255, .45);
+      box-shadow: 0 0 0 4px rgba(122, 162, 255, .12);
+    }
+
+    .hint {
+      margin-top: 8px;
       color: var(--muted2);
       font-size: 12px;
-      line-height:1.35;
+      line-height: 1.35;
     }
 
-    .chips{
-      display:flex; gap:8px; flex-wrap:wrap;
-      margin-top:8px;
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
     }
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       padding: 8px 10px;
       border-radius: 999px;
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.03);
+      background: rgba(255, 255, 255, .03);
       color: var(--text);
       font-size: 12px;
-      cursor:pointer;
-      user-select:none;
-      transition:.12s ease;
+      cursor: pointer;
+      user-select: none;
+      transition: .12s ease;
     }
-    .chip:hover{ border-color: var(--stroke2); transform: translateY(-1px); }
-    .chip.on{
-      border-color: rgba(122,162,255,.35);
-      background: rgba(122,162,255,.14);
+
+    .chip:hover {
+      border-color: var(--stroke2);
+      transform: translateY(-1px);
     }
-    .chip .x{
-      width:16px; height:16px; border-radius:6px;
-      display:inline-flex; align-items:center; justify-content:center;
-      border:1px solid var(--stroke);
+
+    .chip.on {
+      border-color: rgba(122, 162, 255, .35);
+      background: rgba(122, 162, 255, .14);
+    }
+
+    .chip .x {
+      width: 16px;
+      height: 16px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--stroke);
       color: var(--muted);
-      font-weight:900;
+      font-weight: 900;
       font-size: 11px;
-      line-height:1;
+      line-height: 1;
     }
 
     /* Competitors tag input */
-    .tagBox{
-      display:flex; flex-wrap:wrap; gap:8px;
+    .tagBox {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       padding: 8px;
       border-radius: 12px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(9,12,22,.55);
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(9, 12, 22, .55);
     }
-    .tag{
-      display:inline-flex; align-items:center; gap:8px;
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       padding: 6px 9px;
       border-radius: 999px;
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.03);
+      background: rgba(255, 255, 255, .03);
       font-size: 12px;
       color: var(--text);
     }
-    .tag button{
-      border:0; background:transparent; color:var(--muted);
-      cursor:pointer; font-weight:900; line-height:1;
+
+    .tag button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 900;
+      line-height: 1;
     }
-    .tagInput{
-      flex:1;
+
+    .tagInput {
+      flex: 1;
       min-width: 160px;
-      border:0 !important;
+      border: 0 !important;
       background: transparent !important;
       padding: 8px 6px !important;
-      outline:none;
+      outline: none;
     }
 
     /* Footer nav */
-    .nav{
-      display:flex; justify-content:space-between; gap:10px;
-      margin-top:16px;
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 16px;
       padding-top: 14px;
-      border-top:1px solid var(--stroke);
+      border-top: 1px solid var(--stroke);
     }
-    .btn{
-      border:0;
+
+    .btn {
+      border: 0;
       border-radius: 14px;
       padding: 11px 14px;
       font-weight: 800;
-      cursor:pointer;
-      transition:.15s ease;
-      display:inline-flex; align-items:center; gap:10px;
+      cursor: pointer;
+      transition: .15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
     }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(122,162,255,.96), rgba(78,125,255,.86));
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(122, 162, 255, .96), rgba(78, 125, 255, .86));
       color: #081022;
-      box-shadow: 0 12px 26px rgba(78,125,255,.18);
+      box-shadow: 0 12px 26px rgba(78, 125, 255, .18);
     }
-    .btn.primary:hover{ transform: translateY(-1px); }
-    .btn.secondary{
-      background: rgba(255,255,255,.03);
-      border:1px solid var(--stroke);
+
+    .btn.primary:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--stroke);
       color: var(--text);
     }
-    .btn.secondary:hover{ border-color: var(--stroke2); transform: translateY(-1px); }
-    .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none !important; }
 
-    .warnBox{
+    .btn.secondary:hover {
+      border-color: var(--stroke2);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .warnBox {
       margin-top: 12px;
       padding: 10px 12px;
       border-radius: 14px;
-      border: 1px solid rgba(255,107,107,.25);
-      background: rgba(255,107,107,.08);
-      color: rgba(255,255,255,.88);
+      border: 1px solid rgba(255, 107, 107, .25);
+      background: rgba(255, 107, 107, .08);
+      color: rgba(255, 255, 255, .88);
       font-size: 13px;
       white-space: pre-wrap;
-      display:none;
+      display: none;
     }
 
-    .reviewBox{
-      background: rgba(9,12,22,.55);
-      border:1px solid rgba(255,255,255,.12);
+    .reviewBox {
+      background: rgba(9, 12, 22, .55);
+      border: 1px solid rgba(255, 255, 255, .12);
       border-radius: 14px;
       padding: 12px;
       font-family: var(--mono);
@@ -330,10 +493,11 @@
       line-height: 1.5;
       white-space: pre-wrap;
       max-height: 420px;
-      overflow:auto;
+      overflow: auto;
     }
-    .miniNote{
-      margin-top:10px;
+
+    .miniNote {
+      margin-top: 10px;
       color: var(--muted);
       font-size: 12px;
     }
@@ -354,6 +518,9 @@
       <div class="actions">
         <span class="pill" id="autosaveState">Autosave: on</span>
         <button class="ghost" type="button" onclick="resetWizard()">Reset</button>
+        <button class="ghost" type="button" onclick="window.location.href='/plans'">
+          My Plans
+        </button>
       </div>
     </div>
 
@@ -394,788 +561,789 @@
     </div>
   </div>
 
-<script>
-  // ------------------------------
-  // Schema: steps + fields
-  // ------------------------------
-  const STORAGE_KEY = "conceptlb_intake_v1";
-  const DEFAULTS = {
-    concept_name: "",
-    one_liner: "",
-    cuisine_type: "Modern Mediterranean",
-    cuisine_other: "",
-    service_model: "Dine-in",
-    differentiator: "",
+  <script>
+    // ------------------------------
+    // Schema: steps + fields
+    // ------------------------------
+    const STORAGE_KEY = "conceptlb_intake_v1";
+    const DEFAULTS = {
+      concept_name: "",
+      one_liner: "",
+      cuisine_type: "Modern Mediterranean",
+      cuisine_other: "",
+      service_model: "Dine-in",
+      differentiator: "",
 
-    country: "Lebanon",
-    city: "Beirut",
-    neighborhood_type: "street",
-    size_sqm: 35,
-    seating_capacity: 18,
-    delivery_flag: true,
-    alcohol_flag: false,
+      country: "Lebanon",
+      city: "Beirut",
+      neighborhood_type: "street",
+      size_sqm: 35,
+      seating_capacity: 18,
+      delivery_flag: true,
+      alcohol_flag: false,
 
-    target_audience: ["Young professionals", "Foodies"],
-    price_positioning: "mid",
-    competitors: [],
-    competitive_edge: "",
-    brand_personality_keywords: ["bold", "minimal"],
-    interior_mood_keywords: ["clean", "modern"],
+      target_audience: ["Young professionals", "Foodies"],
+      price_positioning: "mid",
+      competitors: [],
+      competitive_edge: "",
+      brand_personality_keywords: ["bold", "minimal"],
+      interior_mood_keywords: ["clean", "modern"],
 
-    meal_periods: ["lunch", "dinner"],
-    beverage_direction: "coffee_focus",
-    operating_hours: "12:00-23:30",
-    founder_background: "",
-    experience_level: "first_time_founder",
-    ownership_structure: "solo",
-    budget_tier: "mid"
-  };
-
-  const OPTIONS = {
-    cuisine: ["Modern Mediterranean", "Lebanese", "Italian", "Japanese", "Mexican", "Burgers", "Cafe", "Other"],
-    service_model: [
-      {v:"qsr", t:"QSR"},
-      {v:"hybrid", t:"Hybrid (dine-in + takeaway/delivery)"},
-      {v:"dine_in", t:"Dine-in"}
-    ],
-    neighborhood: [
-        {v:"street", t:"Street"},
-        {v:"mall", t:"Mall"},
-        {v:"residential", t:"Residential"},
-        {v:"business", t:"Business district"},
-        {v:"seaside", t:"Seaside"}
-    ],
-    price: [
-      {v:"low", t:"Low"},
-      {v:"mid", t:"Mid"},
-      {v:"premium", t:"Premium"}
-    ],
-    meal_periods: ["breakfast","brunch","lunch","dinner","late_night"],
-    beverage_direction: [
-      {v:"coffee_focus", t:"Coffee focus"},
-      {v:"juice_and_sodas", t:"Juices + sodas"},
-      {v:"mocktails", t:"Mocktails"},
-      {v:"full_bar", t:"Full bar (if alcohol enabled)"}
-    ],
-    experience_level: [
-    {v:"new", t:"New (first-time)"},
-    {v:"some", t:"Some experience"},
-    {v:"expert", t:"Expert operator"}
-    ],
-    ownership_structure: [
-      {v:"solo", t:"Solo"},
-      {v:"partners", t:"Partners"},
-      {v:"family", t:"Family"},
-      {v:"investors", t:"Investors"}
-    ],
-    budget_tier: [
-      {v:"lean", t:"Lean startup"},
-      {v:"mid", t:"Mid-tier"},
-      {v:"premium", t:"Premium build"},
-      {v:"flagship", t:"Flagship investment"}
-    ],
-    target_audience: [
-      "Young professionals",
-      "Families",
-      "Tourists",
-      "Students",
-      "Health-conscious diners",
-      "Office workers",
-      "Night crowd"
-    ],
-    brand_keywords: ["bold","minimal","playful","premium","friendly","fast","craft","clean","warm","urban"],
-    interior_keywords: ["clean","modern","industrial","cozy","bright","dark","natural","minimal","colorful","heritage"]
-  };
-
-  const STEPS = [
-    { id:"identity", title:"Concept Identity", desc:"Name, positioning basics, and what makes it different." },
-    { id:"location", title:"Location & Format", desc:"Where it lives and how it operates physically." },
-    { id:"brand", title:"Market & Brand", desc:"Audience, pricing, competitors, and the vibe." },
-    { id:"ops", title:"Operations & Founder", desc:"Meal periods, beverages, hours, and founder intent." },
-    { id:"review", title:"Review & Generate", desc:"Confirm inputs, then generate your full concept plan." }
-  ];
-
-  // ------------------------------
-  // State
-  // ------------------------------
-  let state = loadState();
-  let currentStep = 0;
-
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return structuredClone(DEFAULTS);
-      const parsed = JSON.parse(raw);
-      return { ...structuredClone(DEFAULTS), ...parsed };
-    }catch(e){
-      return structuredClone(DEFAULTS);
-    }
-  }
-
-  function persistState(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    const pill = document.getElementById("autosaveState");
-    pill.textContent = "Autosave: saved";
-    setTimeout(()=> pill.textContent="Autosave: on", 700);
-  }
-
-  function resetWizard(){
-    if(!confirm("Reset all fields?")) return;
-    state = structuredClone(DEFAULTS);
-    currentStep = 0;
-    persistState();
-    renderAll();
-  }
-
-  function saveNow(){
-    persistState();
-  }
-
-  // ------------------------------
-  // UI Rendering
-  // ------------------------------
-  function renderAll(){
-    renderSteps();
-    renderPanel();
-    updateNav();
-    updateProgress();
-  }
-
-  function renderSteps(){
-    const root = document.getElementById("steps");
-    root.innerHTML = "";
-
-    STEPS.forEach((s, idx)=>{
-      const done = idx < currentStep;
-      const active = idx === currentStep;
-      const clickable = idx <= maxReachableStep();
-
-      const el = document.createElement("div");
-      el.className = `step ${active ? "active" : ""} ${done ? "done" : ""} ${!clickable ? "disabled" : ""}`;
-      el.onclick = () => {
-        if(!clickable) return;
-        currentStep = idx;
-        renderAll();
-      };
-
-      const dot = document.createElement("div");
-      dot.className = "dot";
-      dot.textContent = done ? "✓" : String(idx+1);
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.innerHTML = `<div class="t">${s.title}</div><div class="d">${s.desc}</div>`;
-
-      el.appendChild(dot);
-      el.appendChild(meta);
-      root.appendChild(el);
-    });
-  }
-
-  function updateProgress(){
-    const pct = Math.round((currentStep / (STEPS.length-1)) * 100);
-    document.getElementById("progressPill").textContent = `${pct}%`;
-  }
-
-  function updateNav(){
-    document.getElementById("btnBack").disabled = currentStep === 0;
-
-    const isReview = STEPS[currentStep].id === "review";
-    document.getElementById("btnSave").style.display = isReview ? "none" : "inline-flex";
-    document.getElementById("btnNext").textContent = isReview ? "Generate Full Document" : "Next →";
-  }
-
-  function renderPanel(){
-    const step = STEPS[currentStep];
-    document.getElementById("panelTitle").textContent = step.title;
-    document.getElementById("panelDesc").textContent = step.desc;
-
-    const body = document.getElementById("panelBody");
-    body.innerHTML = "";
-    hideWarn();
-
-    if(step.id === "identity") body.appendChild(renderIdentity());
-    if(step.id === "location") body.appendChild(renderLocation());
-    if(step.id === "brand") body.appendChild(renderBrand());
-    if(step.id === "ops") body.appendChild(renderOps());
-    if(step.id === "review") body.appendChild(renderReview());
-  }
-
-  function showWarn(msg){
-    const w = document.getElementById("warnBox");
-    w.style.display = "block";
-    w.textContent = msg;
-  }
-  function hideWarn(){
-    const w = document.getElementById("warnBox");
-    w.style.display = "none";
-    w.textContent = "";
-  }
-
-  // ------------------------------
-  // Field builders
-  // ------------------------------
-  function field({label, required=false, hint="", contentEl}){
-    const wrap = document.createElement("div");
-    wrap.className = "field";
-
-    const lr = document.createElement("div");
-    lr.className = "labelRow";
-
-    const l = document.createElement("label");
-    l.textContent = label;
-
-    lr.appendChild(l);
-    if(required){
-      const r = document.createElement("span");
-      r.className = "req";
-      r.textContent = "Required";
-      lr.appendChild(r);
-    }
-
-    wrap.appendChild(lr);
-    wrap.appendChild(contentEl);
-
-    if(hint){
-      const h = document.createElement("div");
-      h.className = "hint";
-      h.textContent = hint;
-      wrap.appendChild(h);
-    }
-
-    return wrap;
-  }
-
-  function inputText(key, {placeholder=""}={}){
-    const el = document.createElement("input");
-    el.value = state[key] ?? "";
-    el.placeholder = placeholder;
-    el.oninput = () => { state[key] = el.value; persistState(); };
-    return el;
-  }
-
-  function inputNumber(key, {min=null, max=null}={}){
-    const el = document.createElement("input");
-    el.type = "number";
-    el.value = state[key];
-    if(min !== null) el.min = String(min);
-    if(max !== null) el.max = String(max);
-    el.oninput = () => {
-      const n = Number(el.value);
-      state[key] = Number.isFinite(n) ? n : 0;
-      persistState();
+      meal_periods: ["lunch", "dinner"],
+      beverage_direction: "coffee_focus",
+      operating_hours: "12:00-23:30",
+      founder_background: "",
+      experience_level: "first_time_founder",
+      ownership_structure: "solo",
+      budget_tier: "mid"
     };
-    return el;
-  }
 
-  function inputTextarea(key, {placeholder=""}={}){
-    const el = document.createElement("textarea");
-    el.value = state[key] ?? "";
-    el.placeholder = placeholder;
-    el.oninput = () => { state[key] = el.value; persistState(); };
-    return el;
-  }
+    const OPTIONS = {
+      cuisine: ["Modern Mediterranean", "Lebanese", "Italian", "Japanese", "Mexican", "Burgers", "Cafe", "Other"],
+      service_model: [
+        { v: "qsr", t: "QSR" },
+        { v: "hybrid", t: "Hybrid (dine-in + takeaway/delivery)" },
+        { v: "dine_in", t: "Dine-in" }
+      ],
+      neighborhood: [
+        { v: "street", t: "Street" },
+        { v: "mall", t: "Mall" },
+        { v: "residential", t: "Residential" },
+        { v: "business", t: "Business district" },
+        { v: "seaside", t: "Seaside" }
+      ],
+      price: [
+        { v: "low", t: "Low" },
+        { v: "mid", t: "Mid" },
+        { v: "premium", t: "Premium" }
+      ],
+      meal_periods: ["breakfast", "brunch", "lunch", "dinner", "late_night"],
+      beverage_direction: [
+        { v: "coffee_focus", t: "Coffee focus" },
+        { v: "juice_and_sodas", t: "Juices + sodas" },
+        { v: "mocktails", t: "Mocktails" },
+        { v: "full_bar", t: "Full bar (if alcohol enabled)" }
+      ],
+      experience_level: [
+        { v: "new", t: "New (first-time)" },
+        { v: "some", t: "Some experience" },
+        { v: "expert", t: "Expert operator" }
+      ],
+      ownership_structure: [
+        { v: "solo", t: "Solo" },
+        { v: "partners", t: "Partners" },
+        { v: "family", t: "Family" },
+        { v: "investors", t: "Investors" }
+      ],
+      budget_tier: [
+        { v: "lean", t: "Lean startup" },
+        { v: "mid", t: "Mid-tier" },
+        { v: "premium", t: "Premium build" },
+        { v: "flagship", t: "Flagship investment" }
+      ],
+      target_audience: [
+        "Young professionals",
+        "Families",
+        "Tourists",
+        "Students",
+        "Health-conscious diners",
+        "Office workers",
+        "Night crowd"
+      ],
+      brand_keywords: ["bold", "minimal", "playful", "premium", "friendly", "fast", "craft", "clean", "warm", "urban"],
+      interior_keywords: ["clean", "modern", "industrial", "cozy", "bright", "dark", "natural", "minimal", "colorful", "heritage"]
+    };
 
-  function inputSelect(key, options){
-    const el = document.createElement("select");
-    options.forEach(o=>{
-      const opt = document.createElement("option");
-      if(typeof o === "string"){ opt.value = o; opt.textContent = o; }
-      else { opt.value = o.v; opt.textContent = o.t; }
-      el.appendChild(opt);
-    });
-    el.value = state[key];
-    el.onchange = () => { state[key] = el.value; persistState(); renderAll(); };
-    return el;
-  }
+    const STEPS = [
+      { id: "identity", title: "Concept Identity", desc: "Name, positioning basics, and what makes it different." },
+      { id: "location", title: "Location & Format", desc: "Where it lives and how it operates physically." },
+      { id: "brand", title: "Market & Brand", desc: "Audience, pricing, competitors, and the vibe." },
+      { id: "ops", title: "Operations & Founder", desc: "Meal periods, beverages, hours, and founder intent." },
+      { id: "review", title: "Review & Generate", desc: "Confirm inputs, then generate your full concept plan." }
+    ];
 
-  function toggleBool(key){
-    const el = document.createElement("select");
-    [{v:"true",t:"Yes"},{v:"false",t:"No"}].forEach(o=>{
-      const opt = document.createElement("option");
-      opt.value = o.v; opt.textContent = o.t;
-      el.appendChild(opt);
-    });
-    el.value = String(!!state[key]);
-    el.onchange = ()=> { state[key] = (el.value === "true"); persistState(); };
-    return el;
-  }
+    // ------------------------------
+    // State
+    // ------------------------------
+    let state = loadState();
+    let currentStep = 0;
 
-  function chipsMulti(key, choices){
-    const box = document.createElement("div");
-    box.className = "chips";
-    const set = new Set(Array.isArray(state[key]) ? state[key] : []);
-
-    choices.forEach(c=>{
-      const chip = document.createElement("div");
-      chip.className = `chip ${set.has(c) ? "on" : ""}`;
-      chip.textContent = c;
-      chip.onclick = ()=>{
-        if(set.has(c)) set.delete(c); else set.add(c);
-        state[key] = Array.from(set);
-        persistState();
-        renderAll();
-      };
-      box.appendChild(chip);
-    });
-
-    return box;
-  }
-
-  function tagInput(key){
-    const box = document.createElement("div");
-    box.className = "tagBox";
-
-    const tags = Array.isArray(state[key]) ? state[key] : [];
-
-    function rerender(){
-      box.innerHTML = "";
-      tags.forEach((t, idx)=>{
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.innerHTML = `<span>${escapeHtml(t)}</span>`;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = "✕";
-        btn.onclick = ()=>{
-          tags.splice(idx, 1);
-          state[key] = tags;
-          persistState();
-          rerender();
-        };
-        tag.appendChild(btn);
-        box.appendChild(tag);
-      });
-
-      const inp = document.createElement("input");
-      inp.className = "tagInput";
-      inp.placeholder = "Type a competitor and press Enter…";
-      inp.onkeydown = (e)=>{
-        if(e.key === "Enter"){
-          e.preventDefault();
-          const val = (inp.value || "").trim();
-          if(!val) return;
-          if(!tags.includes(val)) tags.push(val);
-          state[key] = tags;
-          inp.value = "";
-          persistState();
-          rerender();
-        }
-      };
-      box.appendChild(inp);
-    }
-
-    rerender();
-    return box;
-  }
-
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  // ------------------------------
-  // Step Panels
-  // ------------------------------
-  function renderIdentity(){
-    const g = document.createElement("div");
-    g.className = "formGrid";
-
-    g.appendChild(field({
-      label:"Concept Name",
-      required:true,
-      hint:"Short, memorable, and brandable.",
-      contentEl: inputText("concept_name", {placeholder:"e.g., OMB (Oh My Bun)"})
-    }));
-
-    g.appendChild(field({
-      label:"One-liner",
-      required:true,
-      hint:"One sentence that sells the idea instantly.",
-      contentEl: inputText("one_liner", {placeholder:"e.g., Mess-free pressed brioche burgers with premium sauces."})
-    }));
-
-    g.appendChild(field({
-      label:"Cuisine Type",
-      required:true,
-      hint:"Pick the closest, or choose Other.",
-      contentEl: inputSelect("cuisine_type", OPTIONS.cuisine)
-    }));
-
-    if(state.cuisine_type === "Other"){
-      const other = field({
-        label:"Cuisine (Other)",
-        required:true,
-        hint:"Write your cuisine style in 2–6 words.",
-        contentEl: inputText("cuisine_other", {placeholder:"e.g., Modern Levantine street food"})
-      });
-      other.classList.add("wide");
-      g.appendChild(other);
-    }
-
-    g.appendChild(field({
-      label:"Service Model",
-      required:true,
-      hint:"This drives the plan structure and assumptions.",
-      contentEl: inputSelect("service_model", OPTIONS.service_model)
-    }));
-
-    const diff = field({
-      label:"Differentiator",
-      required:true,
-      hint:"What makes you win vs. nearby options?",
-      contentEl: inputTextarea("differentiator", {placeholder:"e.g., Pressed brioche format, fast kitchen flow, clean ingredients, signature sauces."})
-    });
-    diff.classList.add("wide");
-    g.appendChild(diff);
-
-    return g;
-  }
-
-  function renderLocation(){
-    const g = document.createElement("div");
-    g.className = "formGrid";
-
-    g.appendChild(field({
-      label:"Country",
-      required:true,
-      contentEl: inputText("country", {placeholder:"Lebanon"})
-    }));
-
-    g.appendChild(field({
-      label:"City",
-      required:true,
-      contentEl: inputText("city", {placeholder:"Beirut"})
-    }));
-
-    g.appendChild(field({
-      label:"Neighborhood Type",
-      required:true,
-      contentEl: inputSelect("neighborhood_type", OPTIONS.neighborhood)
-    }));
-
-    g.appendChild(field({
-      label:"Size (sqm)",
-      required:true,
-      hint:"Used for layout assumptions and feasibility checks.",
-      contentEl: inputNumber("size_sqm", {min:5, max:1000})
-    }));
-
-    g.appendChild(field({
-      label:"Seating Capacity",
-      required:true,
-      hint:"If 0, you’re basically delivery-only.",
-      contentEl: inputNumber("seating_capacity", {min:0, max:400})
-    }));
-
-    g.appendChild(field({
-      label:"Delivery Enabled?",
-      required:true,
-      contentEl: toggleBool("delivery_flag")
-    }));
-
-    g.appendChild(field({
-      label:"Alcohol Served?",
-      required:true,
-      hint:"If Yes, beverage program may include bar logic later.",
-      contentEl: toggleBool("alcohol_flag")
-    }));
-
-    return g;
-  }
-
-  function renderBrand(){
-    const g = document.createElement("div");
-    g.className = "formGrid";
-
-    const ta = field({
-      label:"Target Audience",
-      required:false,
-      hint:"Select 1–3. Too many makes the concept fuzzy.",
-      contentEl: chipsMulti("target_audience", OPTIONS.target_audience)
-    });
-    ta.classList.add("wide");
-    g.appendChild(ta);
-
-    g.appendChild(field({
-      label:"Price Positioning",
-      required:true,
-      hint:"Controls tone and menu pricing direction.",
-      contentEl: inputSelect("price_positioning", OPTIONS.price)
-    }));
-
-    const comps = field({
-      label:"Competitors (tags)",
-      required:false,
-      hint:"Type a name and hit Enter. Keep it real and local.",
-      contentEl: tagInput("competitors")
-    });
-    comps.classList.add("wide");
-    g.appendChild(comps);
-
-    const edge = field({
-      label:"Competitive Edge (your angle)",
-      required:false,
-      hint:"One paragraph on how you beat competitors (product, speed, vibe, price).",
-      contentEl: inputTextarea("competitive_edge", {placeholder:"e.g., Faster service + better bun format + cleaner brand + consistent quality."})
-    });
-    edge.classList.add("wide");
-    g.appendChild(edge);
-
-    const brand = field({
-      label:"Brand Personality Keywords",
-      required:false,
-      hint:"Pick 2–5.",
-      contentEl: chipsMulti("brand_personality_keywords", OPTIONS.brand_keywords)
-    });
-    brand.classList.add("wide");
-    g.appendChild(brand);
-
-    const interior = field({
-      label:"Interior Mood Keywords",
-      required:false,
-      hint:"Pick 2–5. This shapes the environment section.",
-      contentEl: chipsMulti("interior_mood_keywords", OPTIONS.interior_keywords)
-    });
-    interior.classList.add("wide");
-    g.appendChild(interior);
-
-    return g;
-  }
-
-  function renderOps(){
-    const g = document.createElement("div");
-    g.className = "formGrid";
-
-    const mp = field({
-      label:"Meal Periods",
-      required:true,
-      hint:"Select at least one.",
-      contentEl: chipsMulti("meal_periods", OPTIONS.meal_periods)
-    });
-    mp.classList.add("wide");
-    g.appendChild(mp);
-
-    g.appendChild(field({
-      label:"Beverage Direction",
-      required:true,
-      contentEl: inputSelect("beverage_direction", OPTIONS.beverage_direction)
-    }));
-
-    g.appendChild(field({
-      label:"Operating Hours",
-      required:true,
-      hint:"Simple text is fine. You can refine later.",
-      contentEl: inputText("operating_hours", {placeholder:"e.g., 12:00-23:30"})
-    }));
-
-    const fb = field({
-      label:"Founder Background",
-      required:false,
-      hint:"1–3 sentences. Helps keep the tone grounded and credible.",
-      contentEl: inputTextarea("founder_background", {placeholder:"e.g., Operations-focused founder, strong execution mindset, inspired by X."})
-    });
-    fb.classList.add("wide");
-    g.appendChild(fb);
-
-    g.appendChild(field({
-      label:"Experience Level",
-      required:true,
-      contentEl: inputSelect("experience_level", OPTIONS.experience_level)
-    }));
-
-    g.appendChild(field({
-      label:"Ownership Structure",
-      required:true,
-      contentEl: inputSelect("ownership_structure", OPTIONS.ownership_structure)
-    }));
-
-    g.appendChild(field({
-      label:"Budget Tier",
-      required:true,
-      contentEl: inputSelect("budget_tier", OPTIONS.budget_tier)
-    }));
-
-    return g;
-  }
-
-  function renderReview(){
-    const wrap = document.createElement("div");
-
-    const review = document.createElement("div");
-    review.className = "reviewBox";
-
-    const payload = buildIntakePayload();
-    review.textContent = JSON.stringify(payload, null, 2);
-
-    wrap.appendChild(review);
-
-    const note = document.createElement("div");
-    note.className = "miniNote";
-    note.textContent = "Generate will start a job with SSE progress and redirect you to the live status page.";
-    wrap.appendChild(note);
-
-    return wrap;
-  }
-
-  // ------------------------------
-  // Validation + navigation
-  // ------------------------------
-  function maxReachableStep(){
-    // You can always go back; forward is gated by validation.
-    // We compute the furthest step you can reach from step 0 by validating sequentially.
-    let furthest = 0;
-    for(let i=0;i<STEPS.length-1;i++){
-      if(validateStep(i).ok) furthest = i+1;
-      else break;
-    }
-    return furthest;
-  }
-
-  function validateStep(stepIndex){
-    const stepId = STEPS[stepIndex].id;
-    const errs = [];
-
-    const isBlank = (v) => !v || String(v).trim().length === 0;
-
-    if(stepId === "identity"){
-      if(isBlank(state.concept_name)) errs.push("Concept Name is required.");
-      if(isBlank(state.one_liner)) errs.push("One-liner is required.");
-      if(isBlank(state.cuisine_type)) errs.push("Cuisine Type is required.");
-      if(state.cuisine_type === "Other" && isBlank(state.cuisine_other)) errs.push("Cuisine (Other) is required.");
-      if(isBlank(state.service_model)) errs.push("Service Model is required.");
-      if(isBlank(state.differentiator)) errs.push("Differentiator is required.");
-    }
-
-    if(stepId === "location"){
-      if(isBlank(state.country)) errs.push("Country is required.");
-      if(isBlank(state.city)) errs.push("City is required.");
-      if(isBlank(state.neighborhood_type)) errs.push("Neighborhood Type is required.");
-
-      const size = Number(state.size_sqm);
-      const seats = Number(state.seating_capacity);
-
-      if(!Number.isFinite(size) || size <= 0) errs.push("Size (sqm) must be a positive number.");
-      if(!Number.isFinite(seats) || seats < 0) errs.push("Seating Capacity must be 0 or more.");
-
-      if(seats === 0 && state.delivery_flag !== true){
-        errs.push("If seating is 0, Delivery should be Yes (or you’re a ghost restaurant).");
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(DEFAULTS);
+        const parsed = JSON.parse(raw);
+        return { ...structuredClone(DEFAULTS), ...parsed };
+      } catch (e) {
+        return structuredClone(DEFAULTS);
       }
     }
 
-    if(stepId === "brand"){
-      if(isBlank(state.price_positioning)) errs.push("Price Positioning is required.");
-      // soft guidance, not hard fails:
-      const ta = Array.isArray(state.target_audience) ? state.target_audience : [];
-      if(ta.length > 4) errs.push("Target Audience is too broad (pick 1–3 ideally).");
+    function persistState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const pill = document.getElementById("autosaveState");
+      pill.textContent = "Autosave: saved";
+      setTimeout(() => pill.textContent = "Autosave: on", 700);
     }
 
-    if(stepId === "ops"){
-      const mp = Array.isArray(state.meal_periods) ? state.meal_periods : [];
-      if(mp.length === 0) errs.push("Select at least one Meal Period.");
-      if(isBlank(state.beverage_direction)) errs.push("Beverage Direction is required.");
-      if(isBlank(state.operating_hours)) errs.push("Operating Hours is required.");
-      if(isBlank(state.experience_level)) errs.push("Experience Level is required.");
-      if(isBlank(state.ownership_structure)) errs.push("Ownership Structure is required.");
-      if(isBlank(state.budget_tier)) errs.push("Budget Tier is required.");
+    function resetWizard() {
+      if (!confirm("Reset all fields?")) return;
+      state = structuredClone(DEFAULTS);
+      currentStep = 0;
+      persistState();
+      renderAll();
     }
 
-    return { ok: errs.length === 0, errs };
-  }
+    function saveNow() {
+      persistState();
+    }
 
-  function goBack(){
-    hideWarn();
-    if(currentStep === 0) return;
-    currentStep -= 1;
-    renderAll();
-  }
+    // ------------------------------
+    // UI Rendering
+    // ------------------------------
+    function renderAll() {
+      renderSteps();
+      renderPanel();
+      updateNav();
+      updateProgress();
+    }
 
-  async function goNext(){
-    hideWarn();
+    function renderSteps() {
+      const root = document.getElementById("steps");
+      root.innerHTML = "";
 
-    const step = STEPS[currentStep];
+      STEPS.forEach((s, idx) => {
+        const done = idx < currentStep;
+        const active = idx === currentStep;
+        const clickable = idx <= maxReachableStep();
 
-    // Validate current step
-    if(step.id !== "review"){
-      const v = validateStep(currentStep);
-      if(!v.ok){
-        showWarn(v.errs.join("\n"));
+        const el = document.createElement("div");
+        el.className = `step ${active ? "active" : ""} ${done ? "done" : ""} ${!clickable ? "disabled" : ""}`;
+        el.onclick = () => {
+          if (!clickable) return;
+          currentStep = idx;
+          renderAll();
+        };
+
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        dot.textContent = done ? "✓" : String(idx + 1);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.innerHTML = `<div class="t">${s.title}</div><div class="d">${s.desc}</div>`;
+
+        el.appendChild(dot);
+        el.appendChild(meta);
+        root.appendChild(el);
+      });
+    }
+
+    function updateProgress() {
+      const pct = Math.round((currentStep / (STEPS.length - 1)) * 100);
+      document.getElementById("progressPill").textContent = `${pct}%`;
+    }
+
+    function updateNav() {
+      document.getElementById("btnBack").disabled = currentStep === 0;
+
+      const isReview = STEPS[currentStep].id === "review";
+      document.getElementById("btnSave").style.display = isReview ? "none" : "inline-flex";
+      document.getElementById("btnNext").textContent = isReview ? "Generate Full Document" : "Next →";
+    }
+
+    function renderPanel() {
+      const step = STEPS[currentStep];
+      document.getElementById("panelTitle").textContent = step.title;
+      document.getElementById("panelDesc").textContent = step.desc;
+
+      const body = document.getElementById("panelBody");
+      body.innerHTML = "";
+      hideWarn();
+
+      if (step.id === "identity") body.appendChild(renderIdentity());
+      if (step.id === "location") body.appendChild(renderLocation());
+      if (step.id === "brand") body.appendChild(renderBrand());
+      if (step.id === "ops") body.appendChild(renderOps());
+      if (step.id === "review") body.appendChild(renderReview());
+    }
+
+    function showWarn(msg) {
+      const w = document.getElementById("warnBox");
+      w.style.display = "block";
+      w.textContent = msg;
+    }
+    function hideWarn() {
+      const w = document.getElementById("warnBox");
+      w.style.display = "none";
+      w.textContent = "";
+    }
+
+    // ------------------------------
+    // Field builders
+    // ------------------------------
+    function field({ label, required = false, hint = "", contentEl }) {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+
+      const lr = document.createElement("div");
+      lr.className = "labelRow";
+
+      const l = document.createElement("label");
+      l.textContent = label;
+
+      lr.appendChild(l);
+      if (required) {
+        const r = document.createElement("span");
+        r.className = "req";
+        r.textContent = "Required";
+        lr.appendChild(r);
+      }
+
+      wrap.appendChild(lr);
+      wrap.appendChild(contentEl);
+
+      if (hint) {
+        const h = document.createElement("div");
+        h.className = "hint";
+        h.textContent = hint;
+        wrap.appendChild(h);
+      }
+
+      return wrap;
+    }
+
+    function inputText(key, { placeholder = "" } = {}) {
+      const el = document.createElement("input");
+      el.value = state[key] ?? "";
+      el.placeholder = placeholder;
+      el.oninput = () => { state[key] = el.value; persistState(); };
+      return el;
+    }
+
+    function inputNumber(key, { min = null, max = null } = {}) {
+      const el = document.createElement("input");
+      el.type = "number";
+      el.value = state[key];
+      if (min !== null) el.min = String(min);
+      if (max !== null) el.max = String(max);
+      el.oninput = () => {
+        const n = Number(el.value);
+        state[key] = Number.isFinite(n) ? n : 0;
+        persistState();
+      };
+      return el;
+    }
+
+    function inputTextarea(key, { placeholder = "" } = {}) {
+      const el = document.createElement("textarea");
+      el.value = state[key] ?? "";
+      el.placeholder = placeholder;
+      el.oninput = () => { state[key] = el.value; persistState(); };
+      return el;
+    }
+
+    function inputSelect(key, options) {
+      const el = document.createElement("select");
+      options.forEach(o => {
+        const opt = document.createElement("option");
+        if (typeof o === "string") { opt.value = o; opt.textContent = o; }
+        else { opt.value = o.v; opt.textContent = o.t; }
+        el.appendChild(opt);
+      });
+      el.value = state[key];
+      el.onchange = () => { state[key] = el.value; persistState(); renderAll(); };
+      return el;
+    }
+
+    function toggleBool(key) {
+      const el = document.createElement("select");
+      [{ v: "true", t: "Yes" }, { v: "false", t: "No" }].forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o.v; opt.textContent = o.t;
+        el.appendChild(opt);
+      });
+      el.value = String(!!state[key]);
+      el.onchange = () => { state[key] = (el.value === "true"); persistState(); };
+      return el;
+    }
+
+    function chipsMulti(key, choices) {
+      const box = document.createElement("div");
+      box.className = "chips";
+      const set = new Set(Array.isArray(state[key]) ? state[key] : []);
+
+      choices.forEach(c => {
+        const chip = document.createElement("div");
+        chip.className = `chip ${set.has(c) ? "on" : ""}`;
+        chip.textContent = c;
+        chip.onclick = () => {
+          if (set.has(c)) set.delete(c); else set.add(c);
+          state[key] = Array.from(set);
+          persistState();
+          renderAll();
+        };
+        box.appendChild(chip);
+      });
+
+      return box;
+    }
+
+    function tagInput(key) {
+      const box = document.createElement("div");
+      box.className = "tagBox";
+
+      const tags = Array.isArray(state[key]) ? state[key] : [];
+
+      function rerender() {
+        box.innerHTML = "";
+        tags.forEach((t, idx) => {
+          const tag = document.createElement("span");
+          tag.className = "tag";
+          tag.innerHTML = `<span>${escapeHtml(t)}</span>`;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = "✕";
+          btn.onclick = () => {
+            tags.splice(idx, 1);
+            state[key] = tags;
+            persistState();
+            rerender();
+          };
+          tag.appendChild(btn);
+          box.appendChild(tag);
+        });
+
+        const inp = document.createElement("input");
+        inp.className = "tagInput";
+        inp.placeholder = "Type a competitor and press Enter…";
+        inp.onkeydown = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const val = (inp.value || "").trim();
+            if (!val) return;
+            if (!tags.includes(val)) tags.push(val);
+            state[key] = tags;
+            inp.value = "";
+            persistState();
+            rerender();
+          }
+        };
+        box.appendChild(inp);
+      }
+
+      rerender();
+      return box;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ------------------------------
+    // Step Panels
+    // ------------------------------
+    function renderIdentity() {
+      const g = document.createElement("div");
+      g.className = "formGrid";
+
+      g.appendChild(field({
+        label: "Concept Name",
+        required: true,
+        hint: "Short, memorable, and brandable.",
+        contentEl: inputText("concept_name", { placeholder: "e.g., OMB (Oh My Bun)" })
+      }));
+
+      g.appendChild(field({
+        label: "One-liner",
+        required: true,
+        hint: "One sentence that sells the idea instantly.",
+        contentEl: inputText("one_liner", { placeholder: "e.g., Mess-free pressed brioche burgers with premium sauces." })
+      }));
+
+      g.appendChild(field({
+        label: "Cuisine Type",
+        required: true,
+        hint: "Pick the closest, or choose Other.",
+        contentEl: inputSelect("cuisine_type", OPTIONS.cuisine)
+      }));
+
+      if (state.cuisine_type === "Other") {
+        const other = field({
+          label: "Cuisine (Other)",
+          required: true,
+          hint: "Write your cuisine style in 2–6 words.",
+          contentEl: inputText("cuisine_other", { placeholder: "e.g., Modern Levantine street food" })
+        });
+        other.classList.add("wide");
+        g.appendChild(other);
+      }
+
+      g.appendChild(field({
+        label: "Service Model",
+        required: true,
+        hint: "This drives the plan structure and assumptions.",
+        contentEl: inputSelect("service_model", OPTIONS.service_model)
+      }));
+
+      const diff = field({
+        label: "Differentiator",
+        required: true,
+        hint: "What makes you win vs. nearby options?",
+        contentEl: inputTextarea("differentiator", { placeholder: "e.g., Pressed brioche format, fast kitchen flow, clean ingredients, signature sauces." })
+      });
+      diff.classList.add("wide");
+      g.appendChild(diff);
+
+      return g;
+    }
+
+    function renderLocation() {
+      const g = document.createElement("div");
+      g.className = "formGrid";
+
+      g.appendChild(field({
+        label: "Country",
+        required: true,
+        contentEl: inputText("country", { placeholder: "Lebanon" })
+      }));
+
+      g.appendChild(field({
+        label: "City",
+        required: true,
+        contentEl: inputText("city", { placeholder: "Beirut" })
+      }));
+
+      g.appendChild(field({
+        label: "Neighborhood Type",
+        required: true,
+        contentEl: inputSelect("neighborhood_type", OPTIONS.neighborhood)
+      }));
+
+      g.appendChild(field({
+        label: "Size (sqm)",
+        required: true,
+        hint: "Used for layout assumptions and feasibility checks.",
+        contentEl: inputNumber("size_sqm", { min: 5, max: 1000 })
+      }));
+
+      g.appendChild(field({
+        label: "Seating Capacity",
+        required: true,
+        hint: "If 0, you’re basically delivery-only.",
+        contentEl: inputNumber("seating_capacity", { min: 0, max: 400 })
+      }));
+
+      g.appendChild(field({
+        label: "Delivery Enabled?",
+        required: true,
+        contentEl: toggleBool("delivery_flag")
+      }));
+
+      g.appendChild(field({
+        label: "Alcohol Served?",
+        required: true,
+        hint: "If Yes, beverage program may include bar logic later.",
+        contentEl: toggleBool("alcohol_flag")
+      }));
+
+      return g;
+    }
+
+    function renderBrand() {
+      const g = document.createElement("div");
+      g.className = "formGrid";
+
+      const ta = field({
+        label: "Target Audience",
+        required: false,
+        hint: "Select 1–3. Too many makes the concept fuzzy.",
+        contentEl: chipsMulti("target_audience", OPTIONS.target_audience)
+      });
+      ta.classList.add("wide");
+      g.appendChild(ta);
+
+      g.appendChild(field({
+        label: "Price Positioning",
+        required: true,
+        hint: "Controls tone and menu pricing direction.",
+        contentEl: inputSelect("price_positioning", OPTIONS.price)
+      }));
+
+      const comps = field({
+        label: "Competitors (tags)",
+        required: false,
+        hint: "Type a name and hit Enter. Keep it real and local.",
+        contentEl: tagInput("competitors")
+      });
+      comps.classList.add("wide");
+      g.appendChild(comps);
+
+      const edge = field({
+        label: "Competitive Edge (your angle)",
+        required: false,
+        hint: "One paragraph on how you beat competitors (product, speed, vibe, price).",
+        contentEl: inputTextarea("competitive_edge", { placeholder: "e.g., Faster service + better bun format + cleaner brand + consistent quality." })
+      });
+      edge.classList.add("wide");
+      g.appendChild(edge);
+
+      const brand = field({
+        label: "Brand Personality Keywords",
+        required: false,
+        hint: "Pick 2–5.",
+        contentEl: chipsMulti("brand_personality_keywords", OPTIONS.brand_keywords)
+      });
+      brand.classList.add("wide");
+      g.appendChild(brand);
+
+      const interior = field({
+        label: "Interior Mood Keywords",
+        required: false,
+        hint: "Pick 2–5. This shapes the environment section.",
+        contentEl: chipsMulti("interior_mood_keywords", OPTIONS.interior_keywords)
+      });
+      interior.classList.add("wide");
+      g.appendChild(interior);
+
+      return g;
+    }
+
+    function renderOps() {
+      const g = document.createElement("div");
+      g.className = "formGrid";
+
+      const mp = field({
+        label: "Meal Periods",
+        required: true,
+        hint: "Select at least one.",
+        contentEl: chipsMulti("meal_periods", OPTIONS.meal_periods)
+      });
+      mp.classList.add("wide");
+      g.appendChild(mp);
+
+      g.appendChild(field({
+        label: "Beverage Direction",
+        required: true,
+        contentEl: inputSelect("beverage_direction", OPTIONS.beverage_direction)
+      }));
+
+      g.appendChild(field({
+        label: "Operating Hours",
+        required: true,
+        hint: "Simple text is fine. You can refine later.",
+        contentEl: inputText("operating_hours", { placeholder: "e.g., 12:00-23:30" })
+      }));
+
+      const fb = field({
+        label: "Founder Background",
+        required: false,
+        hint: "1–3 sentences. Helps keep the tone grounded and credible.",
+        contentEl: inputTextarea("founder_background", { placeholder: "e.g., Operations-focused founder, strong execution mindset, inspired by X." })
+      });
+      fb.classList.add("wide");
+      g.appendChild(fb);
+
+      g.appendChild(field({
+        label: "Experience Level",
+        required: true,
+        contentEl: inputSelect("experience_level", OPTIONS.experience_level)
+      }));
+
+      g.appendChild(field({
+        label: "Ownership Structure",
+        required: true,
+        contentEl: inputSelect("ownership_structure", OPTIONS.ownership_structure)
+      }));
+
+      g.appendChild(field({
+        label: "Budget Tier",
+        required: true,
+        contentEl: inputSelect("budget_tier", OPTIONS.budget_tier)
+      }));
+
+      return g;
+    }
+
+    function renderReview() {
+      const wrap = document.createElement("div");
+
+      const review = document.createElement("div");
+      review.className = "reviewBox";
+
+      const payload = buildIntakePayload();
+      review.textContent = JSON.stringify(payload, null, 2);
+
+      wrap.appendChild(review);
+
+      const note = document.createElement("div");
+      note.className = "miniNote";
+      note.textContent = "Generate will start a job with SSE progress and redirect you to the live status page.";
+      wrap.appendChild(note);
+
+      return wrap;
+    }
+
+    // ------------------------------
+    // Validation + navigation
+    // ------------------------------
+    function maxReachableStep() {
+      // You can always go back; forward is gated by validation.
+      // We compute the furthest step you can reach from step 0 by validating sequentially.
+      let furthest = 0;
+      for (let i = 0; i < STEPS.length - 1; i++) {
+        if (validateStep(i).ok) furthest = i + 1;
+        else break;
+      }
+      return furthest;
+    }
+
+    function validateStep(stepIndex) {
+      const stepId = STEPS[stepIndex].id;
+      const errs = [];
+
+      const isBlank = (v) => !v || String(v).trim().length === 0;
+
+      if (stepId === "identity") {
+        if (isBlank(state.concept_name)) errs.push("Concept Name is required.");
+        if (isBlank(state.one_liner)) errs.push("One-liner is required.");
+        if (isBlank(state.cuisine_type)) errs.push("Cuisine Type is required.");
+        if (state.cuisine_type === "Other" && isBlank(state.cuisine_other)) errs.push("Cuisine (Other) is required.");
+        if (isBlank(state.service_model)) errs.push("Service Model is required.");
+        if (isBlank(state.differentiator)) errs.push("Differentiator is required.");
+      }
+
+      if (stepId === "location") {
+        if (isBlank(state.country)) errs.push("Country is required.");
+        if (isBlank(state.city)) errs.push("City is required.");
+        if (isBlank(state.neighborhood_type)) errs.push("Neighborhood Type is required.");
+
+        const size = Number(state.size_sqm);
+        const seats = Number(state.seating_capacity);
+
+        if (!Number.isFinite(size) || size <= 0) errs.push("Size (sqm) must be a positive number.");
+        if (!Number.isFinite(seats) || seats < 0) errs.push("Seating Capacity must be 0 or more.");
+
+        if (seats === 0 && state.delivery_flag !== true) {
+          errs.push("If seating is 0, Delivery should be Yes (or you’re a ghost restaurant).");
+        }
+      }
+
+      if (stepId === "brand") {
+        if (isBlank(state.price_positioning)) errs.push("Price Positioning is required.");
+        // soft guidance, not hard fails:
+        const ta = Array.isArray(state.target_audience) ? state.target_audience : [];
+        if (ta.length > 4) errs.push("Target Audience is too broad (pick 1–3 ideally).");
+      }
+
+      if (stepId === "ops") {
+        const mp = Array.isArray(state.meal_periods) ? state.meal_periods : [];
+        if (mp.length === 0) errs.push("Select at least one Meal Period.");
+        if (isBlank(state.beverage_direction)) errs.push("Beverage Direction is required.");
+        if (isBlank(state.operating_hours)) errs.push("Operating Hours is required.");
+        if (isBlank(state.experience_level)) errs.push("Experience Level is required.");
+        if (isBlank(state.ownership_structure)) errs.push("Ownership Structure is required.");
+        if (isBlank(state.budget_tier)) errs.push("Budget Tier is required.");
+      }
+
+      return { ok: errs.length === 0, errs };
+    }
+
+    function goBack() {
+      hideWarn();
+      if (currentStep === 0) return;
+      currentStep -= 1;
+      renderAll();
+    }
+
+    async function goNext() {
+      hideWarn();
+
+      const step = STEPS[currentStep];
+
+      // Validate current step
+      if (step.id !== "review") {
+        const v = validateStep(currentStep);
+        if (!v.ok) {
+          showWarn(v.errs.join("\n"));
+          return;
+        }
+        currentStep += 1;
+        renderAll();
         return;
       }
-      currentStep += 1;
-      renderAll();
-      return;
-    }
 
-    // REVIEW step: generate
-    const allOk = [0,1,2,3].every(i => validateStep(i).ok);
-    if(!allOk){
-      showWarn("Some required fields are missing. Go back and fix the highlighted step(s).");
-      return;
-    }
-
-    persistState();
-    await startJob();
-  }
-
-  function buildIntakePayload(){
-    const payload = {...state};
-
-    // normalize cuisine other
-    if(payload.cuisine_type === "Other"){
-      payload.cuisine_type = payload.cuisine_other || "Other";
-    }
-    delete payload.cuisine_other;
-
-    // keep arrays clean
-    const ta = Array.isArray(payload.target_audience) ? payload.target_audience : [];
-    payload.target_audience = ta.join(", ");   // schema sees one string    payload.brand_personality_keywords = Array.isArray(payload.brand_personality_keywords) ? payload.brand_personality_keywords : [];
-    payload.interior_mood_keywords = Array.isArray(payload.interior_mood_keywords) ? payload.interior_mood_keywords : [];
-    payload.meal_periods = Array.isArray(payload.meal_periods) ? payload.meal_periods : [];
-    payload.competitors = Array.isArray(payload.competitors) ? payload.competitors : [];
-
-    return payload;
-  }
-
-  async function startJob(){
-    const btnNext = document.getElementById("btnNext");
-    btnNext.disabled = true;
-    btnNext.textContent = "Starting…";
-
-    const payload = buildIntakePayload();
-    const chunkSize = 6;
-    const maxWorkers = 3;
-
-    try{
-      const res = await fetch(`/api/generate-job?chunk_size=${encodeURIComponent(chunkSize)}&max_workers=${encodeURIComponent(maxWorkers)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if(!res.ok){
-        const t = await res.text();
-        throw new Error(t || ("HTTP " + res.status));
+      // REVIEW step: generate
+      const allOk = [0, 1, 2, 3].every(i => validateStep(i).ok);
+      if (!allOk) {
+        showWarn("Some required fields are missing. Go back and fix the highlighted step(s).");
+        return;
       }
 
-      const data = await res.json();
-      if(!data.job_id) throw new Error("Missing job_id.");
-      window.location.href = `/jobs/${data.job_id}`;
-    }catch(e){
-      showWarn("Generate failed:\n" + String(e?.message || e));
-      btnNext.disabled = false;
-      btnNext.textContent = "Generate Full Document";
+      persistState();
+      await startJob();
     }
-  }
 
-  // ------------------------------
-  // Boot
-  // ------------------------------
-  renderAll();
-</script>
+    function buildIntakePayload() {
+      const payload = { ...state };
+
+      // normalize cuisine other
+      if (payload.cuisine_type === "Other") {
+        payload.cuisine_type = payload.cuisine_other || "Other";
+      }
+      delete payload.cuisine_other;
+
+      // keep arrays clean
+      const ta = Array.isArray(payload.target_audience) ? payload.target_audience : [];
+      payload.target_audience = ta.join(", ");   // schema sees one string    payload.brand_personality_keywords = Array.isArray(payload.brand_personality_keywords) ? payload.brand_personality_keywords : [];
+      payload.interior_mood_keywords = Array.isArray(payload.interior_mood_keywords) ? payload.interior_mood_keywords : [];
+      payload.meal_periods = Array.isArray(payload.meal_periods) ? payload.meal_periods : [];
+      payload.competitors = Array.isArray(payload.competitors) ? payload.competitors : [];
+
+      return payload;
+    }
+
+    async function startJob() {
+      const btnNext = document.getElementById("btnNext");
+      btnNext.disabled = true;
+      btnNext.textContent = "Starting…";
+
+      const payload = buildIntakePayload();
+      const chunkSize = 6;
+      const maxWorkers = 3;
+
+      try {
+        const res = await fetch(`/api/generate-job?chunk_size=${encodeURIComponent(chunkSize)}&max_workers=${encodeURIComponent(maxWorkers)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || ("HTTP " + res.status));
+        }
+
+        const data = await res.json();
+        if (!data.job_id) throw new Error("Missing job_id.");
+        window.location.href = `/jobs/${data.job_id}`;
+      } catch (e) {
+        showWarn("Generate failed:\n" + String(e?.message || e));
+        btnNext.disabled = false;
+        btnNext.textContent = "Generate Full Document";
+      }
+    }
+
+    // ------------------------------
+    // Boot
+    // ------------------------------
+    renderAll();
+  </script>
 </body>
+
 </html>
