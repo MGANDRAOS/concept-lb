@@ -107,6 +107,73 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         max_output_tokens=1200,
     )
     
+        # --- Canonicalize MODEL OUTPUT before Pydantic validation ---
+    concept_out = result_dict.get("concept")
+    if not isinstance(concept_out, dict):
+        raise ValueError("Normalization model output missing 'concept' object")
+
+    # language: "English" -> "en"
+    lang = concept_out.get("language")
+    if isinstance(lang, str):
+        lang_norm = lang.strip().lower()
+        if lang_norm in ("english", "en"):
+            concept_out["language"] = "en"
+        elif lang_norm in ("arabic", "ar"):
+            concept_out["language"] = "ar"
+
+    # service_model: "QSR" -> "qsr"
+    sm = concept_out.get("service_model")
+    if isinstance(sm, str):
+        sm_norm = sm.strip().lower()
+        mapping = {
+            "qsr": "qsr",
+            "quick service": "qsr",
+            "quick_service": "qsr",
+            "quick-service": "qsr",
+            "dine in": "dine_in",
+            "dine_in": "dine_in",
+            "dine-in": "dine_in",
+            "full service": "dine_in",
+            "full_service": "dine_in",
+            "hybrid": "hybrid",
+        }
+        if sm_norm in mapping:
+            concept_out["service_model"] = mapping[sm_norm]
+
+    # beverage_direction: map your wizard label -> schema enum
+    bev = concept_out.get("beverage_direction")
+    if isinstance(bev, str):
+        bev_norm = bev.strip().lower()
+        bev_map = {
+            "coffee": "coffee_focus",
+            "coffee_focus": "coffee_focus",
+            "coffee-focused": "coffee_focus",
+            "mocktails": "mocktails",
+            "no_alcohol_cocktails": "mocktails",
+            "full_bar": "full_bar",
+            "bar": "full_bar",
+            "alcohol": "full_bar",
+            "juice": "juice_bar",
+            "juice_bar": "juice_bar",
+            "juice_and_sodas": "juice_bar",
+            "juices_and_sodas": "juice_bar",
+            "fresh_juice": "juice_bar",
+        }
+        if bev_norm in bev_map:
+            concept_out["beverage_direction"] = bev_map[bev_norm]
+
+    # target_audience: "Foodies, Families" -> ["Foodies", "Families"]
+    ta = concept_out.get("target_audience")
+    if isinstance(ta, str):
+        concept_out["target_audience"] = [x.strip() for x in ta.split(",") if x.strip()]
+    elif ta is None:
+        concept_out["target_audience"] = []
+    elif isinstance(ta, list):
+        concept_out["target_audience"] = [str(x).strip() for x in ta if str(x).strip()]
+
+    # write back (not strictly needed since dict is mutated, but explicit is nice)
+    result_dict["concept"] = concept_out
+    
     raw_target = intake.get("concept", {}).get("target_audience")
 
     if isinstance(raw_target, str):
