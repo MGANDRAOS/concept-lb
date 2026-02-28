@@ -2,3 +2,4 @@
 .env
 concept-lb.zip
 *.pyc
+*.sqlite
