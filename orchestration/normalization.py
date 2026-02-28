@@ -174,6 +174,34 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
     # write back (not strictly needed since dict is mutated, but explicit is nice)
     result_dict["concept"] = concept_out
     
+    # experience_level: map variants -> schema enum ('new' | 'some' | 'expert')
+    exp = concept_out.get("experience_level")
+    if isinstance(exp, str):
+        exp_norm = exp.strip().lower()
+
+        exp_map = {
+            "new": "new",
+            "beginner": "new",
+            "first_time_founder": "new",
+            "first-time-founder": "new",
+            "first time founder": "new",
+            "no_experience": "new",
+            "none": "new",
+
+            "some": "some",
+            "intermediate": "some",
+            "some_experience": "some",
+            "some experience": "some",
+
+            "expert": "expert",
+            "experienced": "expert",
+            "pro": "expert",
+            "veteran": "expert",
+        }
+
+        if exp_norm in exp_map:
+            concept_out["experience_level"] = exp_map[exp_norm]
+        
     raw_target = intake.get("concept", {}).get("target_audience")
 
     if isinstance(raw_target, str):
