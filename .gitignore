@@ -1,3 +1,4 @@
 .env
 .env
 concept-lb.zip
+*.pyc
