@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Dict
 from pydantic import BaseModel, Field
 
 
@@ -9,6 +9,7 @@ BeverageDirection = Literal["coffee_focus", "mocktails", "full_bar", "juice_bar"
 OwnershipStructure = Literal["solo", "partners"]
 BudgetTier = Literal["starter", "mid", "premium"]
 ExperienceLevel = Literal["new", "some", "expert"]
+ConfidenceSource = Literal["user_provided", "user_unknown", "ai_assumed"]
 Language = Literal["en"]  # MVP: English only
 
 
@@ -56,6 +57,26 @@ class ConceptObject(BaseModel):
     budget_tier: BudgetTier
     experience_level: ExperienceLevel
 
+    # --- Financial Anchors (reduce assumptions) ---
+    expected_daily_orders: Optional[int] = None
+    avg_ticket_usd: Optional[float] = None
+    monthly_rent_usd: Optional[float] = None
+    capex_budget_usd: Optional[float] = None
+
+    staff_model: Optional[Literal["lean", "standard", "full", "custom"]] = None
+
+    sales_mix_dinein_pct: Optional[int] = None
+    sales_mix_takeaway_pct: Optional[int] = None
+    sales_mix_delivery_pct: Optional[int] = None
+
+    target_cogs_pct: Optional[int] = None
+
+    kitchen_type: Optional[Literal["full_line", "prep_finish", "assembly_only", "central_kitchen"]] = None
+    operating_days_per_week: Optional[int] = None
+    alcohol_license_status: Optional[Literal["confirmed", "applying", "not_allowed"]] = None
+
+    # Confidence map for any fields (anchors + others)
+    confidence: Dict[str, ConfidenceSource] = Field(default_factory=dict)
 
 class NormalizationResult(BaseModel):
     concept: ConceptObject

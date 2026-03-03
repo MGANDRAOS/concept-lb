@@ -595,7 +595,35 @@
       founder_background: "",
       experience_level: "first_time_founder",
       ownership_structure: "solo",
-      budget_tier: "mid"
+      budget_tier: "mid",
+
+            // --- Financial Anchors ---
+      expected_daily_orders: null,
+      avg_ticket_usd: null,
+      monthly_rent_usd: null,
+      capex_budget_usd: null,
+      staff_model: "lean",
+
+      sales_mix_dinein_pct: 40,
+      sales_mix_takeaway_pct: 40,
+      sales_mix_delivery_pct: 20,
+
+      target_cogs_pct: null,
+      kitchen_type: "full_line",
+      operating_days_per_week: 6,
+      alcohol_license_status: "not_allowed",
+
+      // --- sources (confidence) ---
+      expected_daily_orders__source: "user_unknown",
+      avg_ticket_usd__source: "user_unknown",
+      monthly_rent_usd__source: "user_unknown",
+      capex_budget_usd__source: "user_unknown",
+      staff_model__source: "user_unknown",
+      sales_mix__source: "user_unknown",
+      target_cogs_pct__source: "user_unknown",
+      kitchen_type__source: "user_unknown",
+      operating_days_per_week__source: "user_unknown",
+      alcohol_license_status__source: "user_unknown",
     };
 
     const OPTIONS = {
@@ -613,14 +641,14 @@
         { v: "seaside", t: "Seaside" }
       ],
       price: [
-        { v: "low", t: "Low" },
+        { v: "affordable", t: "Affordable" },
         { v: "mid", t: "Mid" },
         { v: "premium", t: "Premium" }
       ],
       meal_periods: ["breakfast", "brunch", "lunch", "dinner", "late_night"],
       beverage_direction: [
         { v: "coffee_focus", t: "Coffee focus" },
-        { v: "juice_and_sodas", t: "Juices + sodas" },
+        { v: "juice_bar", t: "Juice bar" },
         { v: "mocktails", t: "Mocktails" },
         { v: "full_bar", t: "Full bar (if alcohol enabled)" }
       ],
@@ -636,10 +664,9 @@
         { v: "investors", t: "Investors" }
       ],
       budget_tier: [
-        { v: "lean", t: "Lean startup" },
+        { v: "starter", t: "Starter" },
         { v: "mid", t: "Mid-tier" },
-        { v: "premium", t: "Premium build" },
-        { v: "flagship", t: "Flagship investment" }
+        { v: "premium", t: "Premium" }
       ],
       target_audience: [
         "Young professionals",
@@ -651,7 +678,24 @@
         "Night crowd"
       ],
       brand_keywords: ["bold", "minimal", "playful", "premium", "friendly", "fast", "craft", "clean", "warm", "urban"],
-      interior_keywords: ["clean", "modern", "industrial", "cozy", "bright", "dark", "natural", "minimal", "colorful", "heritage"]
+      interior_keywords: ["clean", "modern", "industrial", "cozy", "bright", "dark", "natural", "minimal", "colorful", "heritage"],
+      staff_model: [
+        { v: "lean", t: "Lean (2–3 people)" },
+        { v: "standard", t: "Standard (4–6 people)" },
+        { v: "full", t: "Full team (7+)" },
+        { v: "custom", t: "Custom" }
+      ],
+      kitchen_type: [
+        { v: "full_line", t: "Full cooking line" },
+        { v: "prep_finish", t: "Prep + finishing" },
+        { v: "assembly_only", t: "Assembly only" },
+        { v: "central_kitchen", t: "Central kitchen support" }
+      ],
+      alcohol_license_status: [
+        { v: "confirmed", t: "Confirmed" },
+        { v: "applying", t: "Applying / planned" },
+        { v: "not_allowed", t: "Not allowed / no license" }
+      ],
     };
 
     const STEPS = [
@@ -659,6 +703,7 @@
       { id: "location", title: "Location & Format", desc: "Where it lives and how it operates physically." },
       { id: "brand", title: "Market & Brand", desc: "Audience, pricing, competitors, and the vibe." },
       { id: "ops", title: "Operations & Founder", desc: "Meal periods, beverages, hours, and founder intent." },
+      { id: "anchors", title: "Financial Anchors", desc: "Optional but powerful. Cuts down wrong assumptions." },
       { id: "review", title: "Review & Generate", desc: "Confirm inputs, then generate your full concept plan." }
     ];
 
@@ -739,6 +784,166 @@
       });
     }
 
+    function renderAnchors() {
+      const g = document.createElement("div");
+      g.className = "formGrid";
+
+      // Helper: Not sure toggle that sets source and optionally clears value
+      function notSureRow(sourceKey, valueKeys = []) {
+        const wrap = document.createElement("div");
+        wrap.style.display = "flex";
+        wrap.style.gap = "10px";
+        wrap.style.alignItems = "center";
+
+        const sel = document.createElement("select");
+        [
+          { v: "user_provided", t: "I know this" },
+          { v: "user_unknown", t: "Not sure" }
+        ].forEach(o => {
+          const opt = document.createElement("option");
+          opt.value = o.v; opt.textContent = o.t;
+          sel.appendChild(opt);
+        });
+        sel.value = state[sourceKey] || "user_unknown";
+
+        sel.onchange = () => {
+          state[sourceKey] = sel.value;
+          if (sel.value === "user_unknown") {
+            // clear values when unknown (prevents fake precision)
+            valueKeys.forEach(k => state[k] = null);
+          }
+          persistState();
+          renderAll();
+        };
+
+        const note = document.createElement("div");
+        note.style.color = "var(--muted)";
+        note.style.fontSize = "12px";
+        note.textContent = "Source";
+
+        wrap.appendChild(note);
+        wrap.appendChild(sel);
+        return wrap;
+      }
+
+      // Daily orders
+      const orders = field({
+        label: "Expected daily orders (month 1)",
+        required: false,
+        hint: "If unsure, leave it. This drives revenue + staffing.",
+        contentEl: inputNumber("expected_daily_orders", { min: 0, max: 2000 })
+      });
+      orders.classList.add("wide");
+      orders.appendChild(notSureRow("expected_daily_orders__source", ["expected_daily_orders"]));
+      g.appendChild(orders);
+
+      // Avg ticket
+      const ticket = field({
+        label: "Average ticket (USD)",
+        required: false,
+        hint: "Even a rough number improves projections a lot.",
+        contentEl: inputNumber("avg_ticket_usd", { min: 0, max: 1000 })
+      });
+      ticket.classList.add("wide");
+      ticket.appendChild(notSureRow("avg_ticket_usd__source", ["avg_ticket_usd"]));
+      g.appendChild(ticket);
+
+      // Rent
+      const rent = field({
+        label: "Monthly rent (USD)",
+        required: false,
+        hint: "AI cannot guess rent reliably. This is high impact.",
+        contentEl: inputNumber("monthly_rent_usd", { min: 0, max: 50000 })
+      });
+      rent.classList.add("wide");
+      rent.appendChild(notSureRow("monthly_rent_usd__source", ["monthly_rent_usd"]));
+      g.appendChild(rent);
+
+      // Capex
+      const capex = field({
+        label: "Setup budget / capex (USD)",
+        required: false,
+        hint: "Helps avoid unrealistic equipment assumptions.",
+        contentEl: inputNumber("capex_budget_usd", { min: 0, max: 1000000 })
+      });
+      capex.classList.add("wide");
+      capex.appendChild(notSureRow("capex_budget_usd__source", ["capex_budget_usd"]));
+      g.appendChild(capex);
+
+      // Staff model
+      const staff = field({
+        label: "Staff model at launch",
+        required: false,
+        hint: "Used for payroll and operational feasibility.",
+        contentEl: inputSelect("staff_model", OPTIONS.staff_model)
+      });
+      staff.classList.add("wide");
+      staff.appendChild(notSureRow("staff_model__source"));
+      g.appendChild(staff);
+
+      // Channel mix
+      const mix = document.createElement("div");
+      mix.className = "formGrid";
+      mix.appendChild(field({ label: "Dine-in %", contentEl: inputNumber("sales_mix_dinein_pct", { min: 0, max: 100 }) }));
+      mix.appendChild(field({ label: "Takeaway %", contentEl: inputNumber("sales_mix_takeaway_pct", { min: 0, max: 100 }) }));
+      mix.appendChild(field({ label: "Delivery %", contentEl: inputNumber("sales_mix_delivery_pct", { min: 0, max: 100 }) }));
+      const mixWrap = field({
+        label: "Sales channel mix (should total ~100%)",
+        required: false,
+        hint: "This affects staffing, packaging, and growth strategy.",
+        contentEl: mix
+      });
+      mixWrap.classList.add("wide");
+      mixWrap.appendChild(notSureRow("sales_mix__source", ["sales_mix_dinein_pct","sales_mix_takeaway_pct","sales_mix_delivery_pct"]));
+      g.appendChild(mixWrap);
+
+      // Target COGS %
+      const cogs = field({
+        label: "Target food cost % (COGS)",
+        required: false,
+        hint: "If unknown, AI will assume. Typical range: 25–40%.",
+        contentEl: inputNumber("target_cogs_pct", { min: 0, max: 100 })
+      });
+      cogs.classList.add("wide");
+      cogs.appendChild(notSureRow("target_cogs_pct__source", ["target_cogs_pct"]));
+      g.appendChild(cogs);
+
+      // Kitchen type
+      const kt = field({
+        label: "Kitchen type",
+        required: false,
+        hint: "Changes equipment + menu feasibility.",
+        contentEl: inputSelect("kitchen_type", OPTIONS.kitchen_type)
+      });
+      kt.classList.add("wide");
+      kt.appendChild(notSureRow("kitchen_type__source"));
+      g.appendChild(kt);
+
+      // Operating days
+      const days = field({
+        label: "Operating days per week",
+        required: false,
+        hint: "Revenue projections assume this.",
+        contentEl: inputNumber("operating_days_per_week", { min: 1, max: 7 })
+      });
+      days.classList.add("wide");
+      days.appendChild(notSureRow("operating_days_per_week__source", ["operating_days_per_week"]));
+      g.appendChild(days);
+
+      // Alcohol license status
+      const alc = field({
+        label: "Alcohol license status",
+        required: false,
+        hint: "Different from alcohol_flag (intent). This is legal reality.",
+        contentEl: inputSelect("alcohol_license_status", OPTIONS.alcohol_license_status)
+      });
+      alc.classList.add("wide");
+      alc.appendChild(notSureRow("alcohol_license_status__source"));
+      g.appendChild(alc);
+
+      return g;
+    }
+
     function updateProgress() {
       const pct = Math.round((currentStep / (STEPS.length - 1)) * 100);
       document.getElementById("progressPill").textContent = `${pct}%`;
@@ -766,6 +971,7 @@
       if (step.id === "brand") body.appendChild(renderBrand());
       if (step.id === "ops") body.appendChild(renderOps());
       if (step.id === "review") body.appendChild(renderReview());
+      if (step.id === "anchors") body.appendChild(renderAnchors());
     }
 
     function showWarn(msg) {
@@ -773,6 +979,7 @@
       w.style.display = "block";
       w.textContent = msg;
     }
+    
     function hideWarn() {
       const w = document.getElementById("warnBox");
       w.style.display = "none";
@@ -868,7 +1075,7 @@
       return el;
     }
 
-function chipsMulti(key, choices) {
+    function chipsMulti(key, choices) {
   const box = document.createElement("div");
   box.className = "chips";
 
@@ -1274,6 +1481,17 @@ function chipsMulti(key, choices) {
         if (isBlank(state.budget_tier)) errs.push("Budget Tier is required.");
       }
 
+      if (stepId === "anchors") {
+        // Optional: channel mix sanity if user_provided
+        if (state.sales_mix__source === "user_provided") {
+          const a = Number(state.sales_mix_dinein_pct || 0);
+          const b = Number(state.sales_mix_takeaway_pct || 0);
+          const c = Number(state.sales_mix_delivery_pct || 0);
+          const total = a + b + c;
+          if (total < 90 || total > 110) errs.push("Sales mix should total ~100% (±10%).");
+        }
+      }
+
       return { ok: errs.length === 0, errs };
     }
 
@@ -1323,10 +1541,30 @@ function chipsMulti(key, choices) {
 
       // keep arrays clean
       const ta = Array.isArray(payload.target_audience) ? payload.target_audience : [];
-      payload.target_audience = ta.join(", ");   // schema sees one string    payload.brand_personality_keywords = Array.isArray(payload.brand_personality_keywords) ? payload.brand_personality_keywords : [];
+      payload.target_audience = ta;
+      payload.brand_personality_keywords = Array.isArray(payload.brand_personality_keywords) ? payload.brand_personality_keywords : [];
       payload.interior_mood_keywords = Array.isArray(payload.interior_mood_keywords) ? payload.interior_mood_keywords : [];
       payload.meal_periods = Array.isArray(payload.meal_periods) ? payload.meal_periods : [];
       payload.competitors = Array.isArray(payload.competitors) ? payload.competitors : [];
+
+            // Build confidence map (server stores this)
+      payload.confidence = {
+        expected_daily_orders: state.expected_daily_orders__source,
+        avg_ticket_usd: state.avg_ticket_usd__source,
+        monthly_rent_usd: state.monthly_rent_usd__source,
+        capex_budget_usd: state.capex_budget_usd__source,
+        staff_model: state.staff_model__source,
+        sales_mix: state.sales_mix__source,
+        target_cogs_pct: state.target_cogs_pct__source,
+        kitchen_type: state.kitchen_type__source,
+        operating_days_per_week: state.operating_days_per_week__source,
+        alcohol_license_status: state.alcohol_license_status__source
+      };
+
+      // Remove UI-only source keys from payload
+      Object.keys(payload).forEach(k => {
+        if (k.endsWith("__source")) delete payload[k];
+      });
 
       return payload;
     }

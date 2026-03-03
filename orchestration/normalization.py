@@ -40,7 +40,10 @@ language, concept_name, one_liner, cuisine_type, service_model, differentiator,
 country, city, neighborhood_type, size_sqm, seating_capacity, alcohol_flag,
 target_audience, price_positioning, meal_periods, competitors, competitive_edge,
 brand_personality_keywords, interior_mood_keywords, beverage_direction, delivery_flag,
-operating_hours, founder_background, ownership_structure, budget_tier, experience_level.
+operating_hours, founder_background, ownership_structure, budget_tier, experience_level,
+expected_daily_orders, avg_ticket_usd, monthly_rent_usd, capex_budget_usd, staff_model,
+sales_mix_dinein_pct, sales_mix_takeaway_pct, sales_mix_delivery_pct,
+target_cogs_pct, kitchen_type, operating_days_per_week, alcohol_license_status, confidence.
 """
 
 
@@ -107,7 +110,7 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         max_output_tokens=1200,
     )
     
-        # --- Canonicalize MODEL OUTPUT before Pydantic validation ---
+    # --- Canonicalize MODEL OUTPUT before Pydantic validation ---
     concept_out = result_dict.get("concept")
     if not isinstance(concept_out, dict):
         raise ValueError("Normalization model output missing 'concept' object")
@@ -201,22 +204,50 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
 
         if exp_norm in exp_map:
             concept_out["experience_level"] = exp_map[exp_norm]
-        
-    raw_target = intake.get("concept", {}).get("target_audience")
 
-    if isinstance(raw_target, str):
-        # Convert comma-separated string to list
-        intake["concept"]["target_audience"] = [
-            x.strip()
-            for x in raw_target.split(",")
-            if x.strip()
-        ]
-
-    elif raw_target is None:
-        intake["concept"]["target_audience"] = []
 
     # Validate shape strictly
     validated = NormalizationResult.model_validate(result_dict)
+    
+        # --- Pass-through: NEVER let the model drop wizard-provided anchors ---
+    intake_concept = intake.get("concept", {}) if isinstance(intake.get("concept"), dict) else {}
+
+    passthrough_keys = [
+        "expected_daily_orders",
+        "avg_ticket_usd",
+        "monthly_rent_usd",
+        "capex_budget_usd",
+        "staff_model",
+        "sales_mix_dinein_pct",
+        "sales_mix_takeaway_pct",
+        "sales_mix_delivery_pct",
+        "target_cogs_pct",
+        "kitchen_type",
+        "operating_days_per_week",
+        "alcohol_license_status",
+        "confidence",
+    ]
+
+    for key in passthrough_keys:
+        if key in intake_concept:
+            incoming_value = intake_concept.get(key)
+
+            # Only overwrite model output if:
+            # - the wizard provided a real value, OR
+            # - the model output is missing/None, OR
+            # - it's the confidence map (wizard truth)
+            if key == "confidence":
+                if isinstance(incoming_value, dict):
+                    concept_out["confidence"] = incoming_value
+            else:
+                model_value = concept_out.get(key, None)
+                wizard_has_value = incoming_value not in (None, "", [])
+                model_missing = model_value in (None, "", [])
+                if wizard_has_value and model_missing:
+                    concept_out[key] = incoming_value
+
+    # write back
+    result_dict["concept"] = concept_out
 
     # Return as plain dict to keep Flask jsonify happy
     return validated.model_dump()
