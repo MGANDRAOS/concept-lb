@@ -66,6 +66,7 @@ INSTRUCTIONS:
 """.strip()
 
 
+
 def _validate_required_blocks(section_spec: Dict[str, Any], section_dict: Dict[str, Any]) -> None:
     blocks = section_dict.get("blocks", [])
     present_types = {b.get("type") for b in blocks if isinstance(b, dict)}
@@ -89,25 +90,64 @@ def generate_sections_bundle(
 
     concept_json = json.dumps(concept, ensure_ascii=False)
     specs_json = json.dumps(section_specs, ensure_ascii=False)
+    
+    # Compact anchors summary (helps the model not miss key numeric inputs)
+    confidence = concept.get("confidence") or {}
+    anchors_summary_lines = ["FINANCIAL ANCHORS SUMMARY (respect these if provided):"]
+
+    def _src(key: str) -> str:
+        return str(confidence.get(key, "ai_assumed"))
+
+    def _line(key: str, label: str, source_key: str = None) -> None:
+        v = concept.get(key, None)
+        sk = source_key or key
+        if v is None:
+            anchors_summary_lines.append(f"- {label}: UNKNOWN (source={_src(sk)})")
+        else:
+            anchors_summary_lines.append(f"- {label}: {v} (source={_src(sk)})")
+
+    _line("expected_daily_orders", "Expected daily orders")
+    _line("avg_ticket_usd", "Average ticket (USD)")
+    _line("monthly_rent_usd", "Monthly rent (USD)")
+    _line("capex_budget_usd", "Capex budget (USD)")
+    _line("staff_model", "Staff model")
+    _line("target_cogs_pct", "Target COGS %")
+    _line("kitchen_type", "Kitchen type")
+    _line("operating_days_per_week", "Operating days/week")
+    _line("alcohol_license_status", "Alcohol license status")
+    _line("sales_mix_dinein_pct", "Sales mix dine-in %", source_key="sales_mix")
+    _line("sales_mix_takeaway_pct", "Sales mix takeaway %", source_key="sales_mix")
+    _line("sales_mix_delivery_pct", "Sales mix delivery %", source_key="sales_mix")
+
+    anchors_block = "\n".join(anchors_summary_lines)
 
     assumptions_instruction = ""
     if include_assumptions:
         assumptions_instruction = """
-Also include assumptions_table and disclaimer in the SAME JSON response.
-Assumptions must cover:
-- Rent
-- Labor/salaries
-- Utilities
-- Marketing
-- Packaging
-- Equipment range
-- Typical operating ratios
-Use realistic Lebanon-calibrated USD ranges.
-Do NOT claim real market citations.
-"""
+        Also include assumptions_table and disclaimer in the SAME JSON response.
+
+        CRITICAL: Use the FINANCIAL ANCHORS inside CONCEPT_OBJECT (if present).
+        - If a value is provided (not null), treat it as USER-PROVIDED TRUTH. Do NOT override it.
+        - Only assume values that are missing / null.
+        - In assumptions_table, explicitly label user-provided anchors as "User provided" in the explanation.
+
+        Assumptions must cover (ONLY if missing in the concept object):
+        - Rent (monthly_rent_usd)
+        - Daily orders (expected_daily_orders)
+        - Average ticket (avg_ticket_usd)
+        - Labor/salaries (staff_model or inferred)
+        - Utilities
+        - Marketing
+        - Packaging
+        - Equipment range (capex_budget_usd if missing, otherwise reference it)
+        - Typical operating ratios (target_cogs_pct / channel mix)
+
+        Use realistic Lebanon-calibrated USD ranges.
+        Do NOT claim real market citations.eal market citations.
+        """
 
     user_prompt = BUNDLE_USER_PROMPT_TEMPLATE.format(
-        concept_json=concept_json,
+        concept_json=f"{anchors_block}\n\n{concept_json}",
         specs_json=specs_json,
         assumptions_instruction=assumptions_instruction,
     )
@@ -190,6 +230,18 @@ Expected JSON:
 
         if not isinstance(table, list) or len(table) < 6:
             raise ValueError("Assumptions table missing or too small.")
+        
+        # If anchors were provided, ensure the assumptions table acknowledges at least one of them
+        anchors_present = any(concept.get(k) is not None for k in [
+            "expected_daily_orders", "avg_ticket_usd", "monthly_rent_usd", "capex_budget_usd"
+        ])
+        if anchors_present:
+            joined = " ".join(
+                (str(r.get("label", "")) + " " + str(r.get("value", "")) + " " + str(r.get("explanation", "")))
+                for r in table if isinstance(r, dict)
+            ).lower()
+            if not any(x in joined for x in ["daily orders", "ticket", "rent", "capex", "cogs", "sales mix"]):
+                raise ValueError("Assumptions table does not acknowledge provided anchors.")
         if not isinstance(disclaimer, str) or not disclaimer.strip():
             raise ValueError("Disclaimer missing.")
         
