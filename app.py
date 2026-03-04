@@ -12,6 +12,7 @@ from flask_cors import CORS
 from pydantic import BaseModel
 
 from config import Config
+from orchestration.financials_engine import compute_derived_financials
 from orchestration.normalization import normalize_intake
 from orchestration.section_specs import SECTION_SPECS, should_include_section
 from orchestration.section_bundle_generator import generate_sections_bundle
@@ -211,6 +212,8 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             _job_update(job_id, percent=2, message="Normalizing intake…", log="Normalizing intake…")
             normalized = normalize_intake(intake)
             concept = normalized["concept"]
+            concept["derived_financials"] = compute_derived_financials(concept)
+            normalized["concept"] = concept
 
             included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
             included_specs.sort(key=lambda s: s.get("order", 0))

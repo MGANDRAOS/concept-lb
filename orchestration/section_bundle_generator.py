@@ -120,16 +120,25 @@ def generate_sections_bundle(
     _line("sales_mix_delivery_pct", "Sales mix delivery %", source_key="sales_mix")
 
     anchors_block = "\n".join(anchors_summary_lines)
-
+    anchors_summary_lines.append("IMMUTABLE VALUES: Any field marked user_provided must be copied exactly as-is.")
+    
     assumptions_instruction = ""
     if include_assumptions:
         assumptions_instruction = """
         Also include assumptions_table and disclaimer in the SAME JSON response.
 
         CRITICAL: Use the FINANCIAL ANCHORS inside CONCEPT_OBJECT (if present).
-        - If a value is provided (not null), treat it as USER-PROVIDED TRUTH. Do NOT override it.
-        - Only assume values that are missing / null.
-        - In assumptions_table, explicitly label user-provided anchors as "User provided" in the explanation.
+            - If confidence for a field = "user_provided":
+            • You MUST use the exact numeric/value given.
+            • You MUST NOT change it.
+            • You MUST NOT reinterpret it.
+            • You MUST NOT upscale or adjust it.
+            • You MUST include it in assumptions_table exactly as given.
+        - You may only assume fields where:
+        • value is null OR
+        • confidence is "user_unknown" OR
+        • confidence is "ai_assumed".
+  - In assumptions_table, explicitly label user-provided anchors as "User provided" in the explanation.
 
         Assumptions must cover (ONLY if missing in the concept object):
         - Rent (monthly_rent_usd)
