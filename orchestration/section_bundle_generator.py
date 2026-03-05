@@ -48,6 +48,10 @@ CONTENT RULES:
   - Do NOT reference other sections.
   - Do NOT mention AI or prompts.
 - Keep content consultant-grade and structured.
+- If concept.derived_financials.outputs is present:
+  - Use those numbers exactly for any revenue/margin/breakeven mentions.
+  - Do NOT invent or recompute alternative totals.
+  - If an output is null, state it cannot be computed yet due to missing inputs.
 """.strip()
 
 
@@ -89,6 +93,16 @@ def generate_sections_bundle(
 ) -> Dict[str, Any]:
 
     concept_json = json.dumps(concept, ensure_ascii=False)
+    
+    derived_outputs = (concept.get("derived_financials") or {}).get("outputs") or {}
+    if isinstance(derived_outputs, dict) and derived_outputs:
+        concept_json = (
+            "DETERMINISTIC FINANCIAL OUTPUTS (use exactly if present):\n"
+            + json.dumps(derived_outputs, ensure_ascii=False)
+            + "\n\n"
+            + concept_json
+        )
+    
     specs_json = json.dumps(section_specs, ensure_ascii=False)
     
     # Compact anchors summary (helps the model not miss key numeric inputs)
