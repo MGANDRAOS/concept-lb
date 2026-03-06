@@ -59,6 +59,9 @@ def generate_html():
     intake = request.get_json(force=True) or {}
     normalized = normalize_intake(intake)
     concept = normalized["concept"]
+    
+    concept["derived_financials"] = compute_derived_financials(concept)
+    normalized["concept"] = concept
 
     included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
     included_specs.sort(key=lambda s: s.get("order", 0))
