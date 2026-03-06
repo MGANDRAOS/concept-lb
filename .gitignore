@@ -4,3 +4,17 @@ concept-lb.zip
 *.pyc
 *.sqlite
 *.pyc
+__pycache__/config.cpython-313.pyc
+instance/concept_lb.sqlite
+orchestration/__pycache__/__init__.cpython-313.pyc
+orchestration/__pycache__/db.cpython-313.pyc
+orchestration/__pycache__/normalization.cpython-313.pyc
+orchestration/__pycache__/openai_client.cpython-313.pyc
+orchestration/__pycache__/plans_repo.cpython-313.pyc
+orchestration/__pycache__/repair.cpython-313.pyc
+orchestration/__pycache__/section_bundle_generator.cpython-313.pyc
+orchestration/__pycache__/section_specs.cpython-313.pyc
+schemas/__pycache__/concept_schema.cpython-313.pyc
+schemas/__pycache__/plan_schema.cpython-313.pyc
+schemas/__pycache__/plan_store_schema.cpython-313.pyc
+schemas/concept_schema.py
