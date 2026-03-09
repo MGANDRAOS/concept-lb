@@ -59,12 +59,8 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         intake = {"concept": intake}
     lang = intake["concept"].get("language")
     if isinstance(lang, str):
-        lang_norm = lang.strip().lower()
-        if lang_norm in ("english", "en"):
-            intake["concept"]["language"] = "en"
-        elif lang_norm in ("arabic", "ar"):
-            # MVP schema supports English only.
-            intake["concept"]["language"] = "en"
+        # MVP schema supports English only; coerce any value to "en".
+        intake["concept"]["language"] = "en"
             
             
     service_model = intake["concept"].get("service_model")
@@ -135,15 +131,12 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(concept_out, dict):
         raise ValueError("Normalization model output missing 'concept' object")
 
-    # language: "English" -> "en"
+    # language: "English" / "English/Arabic" -> "en"
     lang = concept_out.get("language")
     if isinstance(lang, str):
         lang_norm = lang.strip().lower()
-        if lang_norm in ("english", "en"):
-            concept_out["language"] = "en"
-        elif lang_norm in ("arabic", "ar"):
-            # MVP schema supports English only.
-            concept_out["language"] = "en"
+        # MVP schema supports English only; coerce any value to "en".
+        concept_out["language"] = "en"
     elif lang is None:
         concept_out["language"] = "en"
 
@@ -165,6 +158,24 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         }
         if sm_norm in mapping:
             concept_out["service_model"] = mapping[sm_norm]
+
+    # ownership_structure: map variants -> schema enum ('solo' | 'partners')
+    own = concept_out.get("ownership_structure")
+    if isinstance(own, str):
+        own_norm = own.strip().lower()
+        own_map = {
+            "solo": "solo",
+            "individual": "solo",
+            "single": "solo",
+            "partners": "partners",
+            "partnership": "partners",
+            "investors": "partners",
+            "investor": "partners",
+            "family": "partners",
+            "co-founders": "partners",
+            "cofounders": "partners",
+        }
+        concept_out["ownership_structure"] = own_map.get(own_norm, "solo")
 
     # beverage_direction: map your wizard label -> schema enum
     bev = concept_out.get("beverage_direction")
