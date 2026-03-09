@@ -63,7 +63,8 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         if lang_norm in ("english", "en"):
             intake["concept"]["language"] = "en"
         elif lang_norm in ("arabic", "ar"):
-            intake["concept"]["language"] = "ar"    
+            # MVP schema supports English only.
+            intake["concept"]["language"] = "en"
             
             
     service_model = intake["concept"].get("service_model")
@@ -110,6 +111,25 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         max_output_tokens=1200,
     )
     
+    def _normalize_confidence_source(value: Any) -> str:
+        """Map noisy confidence labels into schema literals."""
+        if isinstance(value, bool):
+            return "ai_assumed" if value else "user_provided"
+
+        if not isinstance(value, str):
+            return "ai_assumed"
+
+        source = value.strip().lower()
+        if source in ("user_provided", "provided", "known", "user", "manual"):
+            return "user_provided"
+        if source in ("user_unknown", "unknown", "not_sure", "unsure", "missing", "na", "n/a"):
+            return "user_unknown"
+        if source in ("ai_assumed", "inferred", "assumed", "ai_inferred", "model_assumed"):
+            return "ai_assumed"
+
+        # Default to AI assumed when source is noisy/unexpected.
+        return "ai_assumed"
+
     # --- Canonicalize MODEL OUTPUT before Pydantic validation ---
     concept_out = result_dict.get("concept")
     if not isinstance(concept_out, dict):
@@ -122,7 +142,10 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         if lang_norm in ("english", "en"):
             concept_out["language"] = "en"
         elif lang_norm in ("arabic", "ar"):
-            concept_out["language"] = "ar"
+            # MVP schema supports English only.
+            concept_out["language"] = "en"
+    elif lang is None:
+        concept_out["language"] = "en"
 
     # service_model: "QSR" -> "qsr"
     sm = concept_out.get("service_model")
@@ -174,6 +197,15 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
     elif isinstance(ta, list):
         concept_out["target_audience"] = [str(x).strip() for x in ta if str(x).strip()]
 
+    # confidence: coerce non-schema labels (e.g. "inferred") into allowed literals
+    conf = concept_out.get("confidence")
+    if isinstance(conf, dict):
+        concept_out["confidence"] = {
+            str(k): _normalize_confidence_source(v) for k, v in conf.items()
+        }
+    else:
+        concept_out["confidence"] = {}
+
     # write back (not strictly needed since dict is mutated, but explicit is nice)
     result_dict["concept"] = concept_out
     
@@ -206,10 +238,7 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
             concept_out["experience_level"] = exp_map[exp_norm]
 
 
-    # Validate shape strictly
-    validated = NormalizationResult.model_validate(result_dict)
-    
-        # --- Pass-through: NEVER let the model drop wizard-provided anchors ---
+    # --- Pass-through: NEVER let the model drop wizard-provided anchors ---
     intake_concept = intake.get("concept", {}) if isinstance(intake.get("concept"), dict) else {}
 
     passthrough_keys = [
@@ -238,7 +267,9 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
             # - it's the confidence map (wizard truth)
             if key == "confidence":
                 if isinstance(incoming_value, dict):
-                    concept_out["confidence"] = incoming_value
+                    concept_out["confidence"] = {
+                        str(k): _normalize_confidence_source(v) for k, v in incoming_value.items()
+                    }
             else:
                 model_value = concept_out.get(key, None)
                 wizard_has_value = incoming_value not in (None, "", [])
@@ -248,6 +279,9 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
 
     # write back
     result_dict["concept"] = concept_out
+
+    # Validate shape strictly after all canonicalization and passthrough.
+    validated = NormalizationResult.model_validate(result_dict)
 
     # Return as plain dict to keep Flask jsonify happy
     return validated.model_dump()

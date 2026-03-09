@@ -20,6 +20,20 @@
       <div class="callout-text">{{ block.get("text", "") }}</div>
     </div>
 
+  {% elif t == "image" %}
+    <figure style="margin: 16px 0; text-align: center;">
+      <img 
+        src="{{ block.get('url', '') }}" 
+        alt="{{ block.get('alt_text', 'Concept image') }}"
+        style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);"
+      />
+      {% if block.get("caption") %}
+        <figcaption style="margin-top: 8px; font-size: 13px; color: #a9b4c3; font-style: italic;">
+          {{ block.get("caption") }}
+        </figcaption>
+      {% endif %}
+    </figure>
+
   {% elif t == "table" %}
     {% set cols = block.get("columns") or [] %}
     {% set rows = block.get("rows") or [] %}
