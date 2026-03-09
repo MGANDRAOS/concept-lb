@@ -27,21 +27,23 @@ def generate_concept_image(
     """
     client = _get_client()
 
-    prompt = f"""Create a professional restaurant concept image for:
-    
-Restaurant Name: {concept_name}
-Concept: {concept_description}
-Section Focus: {section_title}
-Style: {style}
-
-Generate a cohesive, professional visual representation suitable for a restaurant concept document.
-Focus on clarity, modern design principles, and restaurant-appropriate aesthetics."""
+    prompt = (
+        f"Photorealistic photograph of a restaurant scene. "
+        f"Concept: {concept_description}. "
+        f"Visual focus: {style}. "
+        f"Shot on a Canon EOS R5 with a 35 mm f/1.4 lens, shallow depth of field, "
+        f"natural warm ambient lighting mixed with soft directional fill light. "
+        f"Professional architectural and food photography style, magazine editorial quality, "
+        f"8K resolution, hyper-detailed textures and materials. "
+        f"ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO SIGNS, NO LOGOS, NO WATERMARKS, "
+        f"NO TYPOGRAPHY, NO WRITING OF ANY KIND anywhere in the image."
+    )
 
     response = client.images.generate(
         model="dall-e-3",
         prompt=prompt,
         size="1024x1024",
-        quality="standard",
+        quality="hd",
         n=1,
     )
 
@@ -66,14 +68,38 @@ def generate_section_images(
         Tuple of (image_url, alt_text) or None
     """
     
-    # Map section IDs to image generation styles
+    # Map section IDs to photorealistic photography direction
     IMAGE_SECTIONS = {
-        "environment_atmosphere": "upscale restaurant ambiance, interior design, lighting mood, seating arrangement",
-        "food_program": "restaurant kitchen, food plating, cuisine presentation, culinary excellence",
-        "menu_structure": "modern menu design, cuisine presentation, ingredient showcase, food photography",
-        "service_staffing_model": "professional restaurant service team, staff training, service excellence, hospitality",
-        "location_strategy": "restaurant location, storefront design, neighborhood presence, accessibility",
-        "concept_overview": "restaurant concept branding, visual identity, dining experience, ambiance",
+        "environment_atmosphere": (
+            "wide-angle interior photograph of an upscale dining room with warm moody lighting, "
+            "elegant furniture, textured walls, candle glow on table settings, bokeh background, "
+            "golden-hour window light streaming in"
+        ),
+        "food_program": (
+            "close-up overhead food photography of beautifully plated dishes on a dark slate table, "
+            "fresh ingredients, vibrant colors, steam rising, professional culinary presentation, "
+            "shallow depth of field, studio strobe accent lighting"
+        ),
+        "menu_structure": (
+            "lifestyle flat-lay photograph of artfully arranged dishes and fresh raw ingredients "
+            "on a rustic wooden surface, colorful garnishes, natural side lighting, "
+            "editorial food-magazine composition"
+        ),
+        "service_staffing_model": (
+            "candid photograph of professional hospitality staff in a fine-dining restaurant, "
+            "crisp uniforms, warm ambient lighting, elegant table service in action, "
+            "documentary photography style, natural expressions"
+        ),
+        "location_strategy": (
+            "exterior dusk photograph of a modern restaurant storefront with large glass windows, "
+            "warm interior glow spilling onto the sidewalk, blue-hour sky, street-level perspective, "
+            "architectural photography with leading lines"
+        ),
+        "concept_overview": (
+            "hero shot of the full restaurant interior from the entrance looking in, "
+            "dramatic lighting, open kitchen visible in background, curated decor details, "
+            "wide-angle architectural photography with rich warm tones"
+        ),
     }
 
     if section_id not in IMAGE_SECTIONS:
