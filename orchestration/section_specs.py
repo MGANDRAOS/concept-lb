@@ -26,7 +26,7 @@ SECTION_SPECS = [
 
     # 6
     {"order": 6, "id": "environment_atmosphere", "title": "The Environment & Atmosphere",
-     "style": "paragraph+bullets", "max_words": 260, "required_blocks": ["paragraph", "bullets"], "conditional": None},
+     "style": "paragraph+bullets", "max_words": 260, "required_blocks": ["paragraph", "bullets"], "conditional": None, "generate_image": True},
 
     # 7
     {"order": 7, "id": "brand_positioning", "title": "The Brand Positioning",
@@ -34,11 +34,11 @@ SECTION_SPECS = [
 
     # 8
     {"order": 8, "id": "food_program", "title": "The Food Program Architecture",
-     "style": "paragraph+bullets+table", "max_words": 380, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None},
+     "style": "paragraph+bullets+table", "max_words": 380, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None, "generate_image": True},
 
     # 9
     {"order": 9, "id": "menu_structure", "title": "The Menu Structure",
-     "style": "paragraph+bullets+table", "max_words": 450, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None},
+     "style": "paragraph+bullets+table", "max_words": 450, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None, "generate_image": True},
 
     # 9.1 (conditional on morning)
     {"order": 10, "id": "menu_morning", "title": "Morning Offerings (if applicable)",
@@ -84,7 +84,7 @@ SECTION_SPECS = [
 
     # 13
     {"order": 20, "id": "service_staffing_model", "title": "The Service & Staffing Model",
-     "style": "paragraph+table+bullets", "max_words": 380, "required_blocks": ["paragraph", "table", "bullets"], "conditional": None},
+     "style": "paragraph+table+bullets", "max_words": 380, "required_blocks": ["paragraph", "table", "bullets"], "conditional": None, "generate_image": True},
 
     # 14
     {"order": 21, "id": "our_guests", "title": "Our Guests (Target Audience Definition)",

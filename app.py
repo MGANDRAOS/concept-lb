@@ -1,4 +1,5 @@
 # app.py
+import base64
 import json
 import os
 import threading
@@ -6,6 +7,7 @@ import time
 import uuid
 from datetime import datetime
 from typing import Any, Dict
+import urllib.request
 
 from flask import Flask, jsonify, redirect, render_template, request, Response
 from flask_cors import CORS
@@ -49,6 +51,29 @@ def _chunk_list(items, chunk_size: int):
         yield items[i : i + chunk_size]
 
 
+def _convert_images_to_data_uris(sections: list) -> list:
+    """
+    Convert external image URLs in sections to base64 data URIs.
+    This prevents network timeouts during PDF generation.
+    """
+    for section in sections:
+        blocks = section.get("blocks", [])
+        for block in blocks:
+            if block.get("type") == "image" and block.get("url", "").startswith("http"):
+                try:
+                    url = block["url"]
+                    with urllib.request.urlopen(url, timeout=15) as response:
+                        image_data = response.read()
+                        content_type = response.headers.get("Content-Type", "image/png")
+                        base64_data = base64.b64encode(image_data).decode("utf-8")
+                        data_uri = f"data:{content_type};base64,{base64_data}"
+                        block["url"] = data_uri
+                except Exception as e:
+                    print(f"Warning: Failed to convert image URL to data URI: {url}. Error: {e}")
+                    # Keep original URL as fallback
+    return sections
+
+
 @app.route("/api/generate-html", methods=["POST"])
 def generate_html():
     """
@@ -79,6 +104,7 @@ def generate_html():
             include_assumptions=include_assumptions,
             model_name="gpt-5.2",
             max_output_tokens=3200 if not include_assumptions else 4200,
+            generate_images=True,
         )
         return chunk_index, bundle
 
@@ -120,6 +146,9 @@ def generate_html():
         ],
     }
     sections.append(assumptions_section)
+
+    # Convert external image URLs to data URIs for faster/offline rendering
+    sections = _convert_images_to_data_uris(sections)
 
     final_plan = {
         "plan_meta": {
@@ -282,6 +311,9 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 ],
             }
             sections.append(assumptions_section)
+
+            # Convert external image URLs to data URIs for faster/offline rendering
+            sections = _convert_images_to_data_uris(sections)
 
             final_plan = {
                 "plan_meta": {
@@ -497,8 +529,9 @@ def plan_export_pdf(plan_id: str):
         browser = p.chromium.launch()
         page = browser.new_page()
 
-        # Use base URL so relative assets can resolve if you ever add them
-        page.set_content(html, wait_until="load")
+        # Images are now base64 data URIs, so domcontentloaded is sufficient
+        # Use increased timeout as a safety measure
+        page.set_content(html, wait_until="domcontentloaded", timeout=60000)
 
         page.add_style_tag(content="""
         @page {

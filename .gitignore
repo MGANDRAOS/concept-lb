@@ -4,3 +4,5 @@ concept-lb.zip
 *.pyc
 *.sqlite
 *.pyc
+/.venv
+/instance
