@@ -17,6 +17,7 @@ from orchestration.normalization import normalize_intake
 from orchestration.section_specs import SECTION_SPECS, should_include_section
 from orchestration.section_bundle_generator import generate_sections_bundle
 from schemas.plan_schema import FinalPlan
+from orchestration.risk_engine import evaluate_risk
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -59,8 +60,17 @@ def generate_html():
     intake = request.get_json(force=True) or {}
     normalized = normalize_intake(intake)
     concept = normalized["concept"]
-    
+
     concept["derived_financials"] = compute_derived_financials(concept)
+    
+
+
+
+    concept["risk_report"] = evaluate_risk(
+        concept,
+        concept["derived_financials"],
+    ).model_dump()
+
     normalized["concept"] = concept
 
     included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
@@ -215,7 +225,14 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             _job_update(job_id, percent=2, message="Normalizing intake…", log="Normalizing intake…")
             normalized = normalize_intake(intake)
             concept = normalized["concept"]
+
             concept["derived_financials"] = compute_derived_financials(concept)
+
+            concept["risk_report"] = evaluate_risk(
+                concept,
+                concept["derived_financials"],
+            ).model_dump()
+
             normalized["concept"] = concept
 
             included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
@@ -295,6 +312,8 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 "sections": sections,
                 "assumptions_table": assumptions_table,
                 "disclaimer": disclaimer,
+                "risk_report": concept.get("risk_report"),
+                "derived_financials": concept.get("derived_financials"),
             }
 
             validated = FinalPlan.model_validate(final_plan).model_dump()
@@ -344,9 +363,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 @app.route("/api/generate-job", methods=["POST"])
 def generate_job():
     intake = request.get_json(force=True) or {}
-    print("=== /api/generate-job payload ===")
-    print(json.dumps(intake, ensure_ascii=False, indent=2)[:5000])
-    print("=== payload keys ===", list(intake.keys()))
+
     chunk_size = int(request.args.get("chunk_size", 6))
     max_workers = int(request.args.get("max_workers", 3))
 
