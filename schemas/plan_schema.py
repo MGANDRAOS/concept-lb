@@ -56,3 +56,5 @@ class FinalPlan(BaseModel):
     sections: List[Section] = Field(min_length=1)
     assumptions_table: List[AssumptionRow] = Field(min_length=1)
     disclaimer: str
+    risk_report: Optional[Dict[str, Any]] = None
+    derived_financials: Optional[Dict[str, Any]] = None
