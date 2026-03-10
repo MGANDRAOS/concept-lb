@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Literal, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
-BlockType = Literal["paragraph", "bullets", "table", "callout"]
+BlockType = Literal["paragraph", "bullets", "table", "callout", "image"]
 
 
 class ParagraphBlock(BaseModel):
@@ -27,7 +27,14 @@ class CalloutBlock(BaseModel):
     text: str
 
 
-Block = Union[ParagraphBlock, BulletsBlock, TableBlock, CalloutBlock]
+class ImageBlock(BaseModel):
+    type: Literal["image"]
+    url: str
+    caption: Optional[str] = None
+    alt_text: str
+
+
+Block = Union[ParagraphBlock, BulletsBlock, TableBlock, CalloutBlock, ImageBlock]
 
 
 class Section(BaseModel):

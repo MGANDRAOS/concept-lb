@@ -4,6 +4,8 @@ concept-lb.zip
 *.pyc
 *.sqlite
 *.pyc
+/.venv
+/instance
 __pycache__/config.cpython-313.pyc
 instance/concept_lb.sqlite
 orchestration/__pycache__/__init__.cpython-313.pyc
