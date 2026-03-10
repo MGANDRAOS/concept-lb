@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 from orchestration.openai_client import call_model_json
 from orchestration.repair import repair_json
+from orchestration.image_generator import generate_section_images
 
 
 BUNDLE_SYSTEM_PROMPT = """
@@ -90,6 +91,7 @@ def generate_sections_bundle(
     include_assumptions: bool,
     model_name: str = "gpt-5.2",
     max_output_tokens: int = 3200,
+    generate_images: bool = True,
 ) -> Dict[str, Any]:
 
     concept_json = json.dumps(concept, ensure_ascii=False)
@@ -272,5 +274,37 @@ Expected JSON:
         raise ValueError(
             f"Model returned {len(result['sections'])} sections but expected {len(section_specs)}."
         )    
+
+    # Generate images for eligible sections
+    if generate_images:
+        concept_name = concept.get("concept_name", "Restaurant Concept")
+        concept_description = concept.get("concept_description", "")
+        
+        spec_by_id = {s["id"]: s for s in section_specs}
+        
+        for section in result["sections"]:
+            section_id = section.get("id")
+            section_title = section.get("title", "")
+            spec = spec_by_id.get(section_id)
+            
+            # Check if this section should have an image generated
+            if spec and spec.get("generate_image", False):
+                image_data = generate_section_images(
+                    concept_name=concept_name,
+                    concept_description=concept_description,
+                    section_id=section_id,
+                    section_title=section_title,
+                )
+                
+                if image_data:
+                    image_url, alt_text = image_data
+                    # Insert image block at the beginning of the section
+                    image_block = {
+                        "type": "image",
+                        "url": image_url,
+                        "alt_text": alt_text,
+                        "caption": f"Visual representation: {section_title}",
+                    }
+                    section["blocks"].insert(0, image_block)
 
     return result
