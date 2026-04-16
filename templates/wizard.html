@@ -1,1405 +1,196 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Concept LB — Wizard</title>
-
-  <link rel="stylesheet" href="/admin.css" />
-
+  <title>Concept LB — Create Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    /* Wizard-specific background gradient */
-    body {
-      background:
-        radial-gradient(1200px 700px at 20% -10%, rgba(122, 162, 255, 0.12), transparent 60%),
-        radial-gradient(900px 600px at 90% 0%, rgba(78, 125, 255, 0.08), transparent 60%),
-        var(--bg);
+    :root {
+      --bg: #09090b; --bg2: #18181b; --surface: #27272a;
+      --border: #3f3f46; --border2: #52525b;
+      --text: #fafafa; --text2: #d4d4d8; --subtle: #a1a1aa; --dim: #71717a;
+      --accent: #818cf8; --accent2: #6366f1; --accent-glow: rgba(129,140,248,.15);
+      --green: #34d399; --green-bg: rgba(52,211,153,.1);
+      --red: #f87171; --red-bg: rgba(248,113,113,.08);
+      --card: rgba(24,24,27,.8); --input: rgba(39,39,42,.6);
+      --radius: 12px; --transition: .2s cubic-bezier(.4,0,.2,1);
     }
+    :root.light {
+      --bg: #fafafa; --bg2: #f4f4f5; --surface: #e4e4e7;
+      --border: #d4d4d8; --border2: #a1a1aa;
+      --text: #09090b; --text2: #27272a; --subtle: #71717a; --dim: #a1a1aa;
+      --accent: #6366f1; --accent2: #4f46e5; --accent-glow: rgba(99,102,241,.1);
+      --green: #059669; --green-bg: rgba(5,150,105,.06);
+      --red: #dc2626; --red-bg: rgba(220,38,38,.05);
+      --card: rgba(255,255,255,.9); --input: #ffffff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-    :root.light body {
-      background:
-        radial-gradient(1200px 700px at 20% -10%, rgba(59, 111, 224, 0.06), transparent 60%),
-        var(--bg);
-    }
+    .chrome { position: fixed; top: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9,9,11,.7); border-bottom: 1px solid var(--border); }
+    :root.light .chrome { background: rgba(250,250,250,.85); }
+    .chrome-inner { max-width: 880px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .chrome-brand { display: flex; align-items: center; gap: 10px; }
+    .chrome-logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+    .chrome-brand span { font-weight: 700; font-size: 14px; letter-spacing: -.3px; }
+    .chrome-actions { display: flex; gap: 6px; align-items: center; }
+    .chrome-btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--subtle); font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); font-family: inherit; }
+    .chrome-btn:hover { border-color: var(--border2); color: var(--text); }
+    .theme-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--subtle); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+    .theme-btn:hover { border-color: var(--border2); color: var(--text); }
 
-    /* Review summary cards */
-    .review-section {
-      margin-bottom: 16px;
-    }
+    .progress-track { position: fixed; top: 53px; left: 0; right: 0; z-index: 99; height: 3px; background: var(--border); }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 0 3px 3px 0; transition: width .4s cubic-bezier(.4,0,.2,1); }
 
-    .review-section-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
+    .main { max-width: 680px; margin: 0 auto; padding: 100px 24px 120px; }
 
-    .review-rows {
-      background: var(--surface);
-      border: 1px solid var(--stroke);
-      border-radius: 12px;
-      overflow: hidden;
-    }
+    .step-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--accent-glow); border: 1px solid rgba(129,140,248,.2); color: var(--accent); font-size: 12px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; margin-bottom: 16px; }
+    .step-title { font-size: 28px; font-weight: 800; letter-spacing: -.5px; line-height: 1.2; margin-bottom: 8px; }
+    .step-desc { font-size: 16px; color: var(--subtle); line-height: 1.5; margin-bottom: 36px; max-width: 520px; }
 
-    .review-row {
-      display: flex;
-      gap: 16px;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--stroke);
-      font-size: 13px;
-      align-items: baseline;
-    }
+    .fields { display: flex; flex-direction: column; gap: 20px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-group.full { grid-column: 1 / -1; }
+    .field-label { display: flex; align-items: center; gap: 8px; }
+    .field-label label { font-size: 14px; font-weight: 600; color: var(--text2); }
+    .field-label .req { font-size: 10px; font-weight: 700; color: var(--accent); background: var(--accent-glow); padding: 2px 6px; border-radius: 4px; letter-spacing: .3px; }
 
-    .review-row:last-child {
-      border-bottom: none;
-    }
+    input, textarea, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--input); color: var(--text); font-family: inherit; font-size: 15px; outline: none; transition: var(--transition); }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    input::placeholder, textarea::placeholder { color: var(--dim); }
+    textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+    select { cursor: pointer; }
+    .field-hint { font-size: 13px; color: var(--dim); line-height: 1.4; }
 
-    .review-key {
-      min-width: 180px;
-      color: var(--muted);
-      flex-shrink: 0;
-    }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--border); background: transparent; color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; user-select: none; transition: var(--transition); }
+    .chip:hover { border-color: var(--accent); background: var(--accent-glow); }
+    .chip.on { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); font-weight: 600; }
 
-    .review-val {
-      color: var(--text);
-      font-weight: 500;
-      word-break: break-word;
-    }
+    .tag-box { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--input); min-height: 48px; transition: var(--transition); }
+    .tag-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; font-weight: 500; color: var(--text2); }
+    .tag button { border: 0; background: transparent; color: var(--dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 0; }
+    .tag button:hover { color: var(--red); }
+    .tag-input { flex: 1; min-width: 140px; border: 0 !important; background: transparent !important; padding: 4px !important; box-shadow: none !important; font-size: 14px; }
 
-    .review-val.empty {
-      color: var(--muted2);
-      font-style: italic;
-    }
+    .source-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .source-row span { font-size: 12px; color: var(--dim); }
+    .source-row select { width: auto; padding: 4px 8px; font-size: 12px; border-radius: 6px; min-height: auto; }
 
-    .mini-note {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
+    .divider { margin: 32px 0 24px; padding: 16px 20px; border-radius: var(--radius); background: linear-gradient(135deg, var(--accent-glow), transparent); border: 1px solid rgba(129,140,248,.15); }
+    .divider h3 { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .divider p { font-size: 13px; color: var(--subtle); }
+
+    .review-grid { display: flex; flex-direction: column; gap: 16px; }
+    .review-card { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .review-card-header { padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--subtle); text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; justify-content: space-between; }
+    .review-card-header .edit-link { font-size: 12px; font-weight: 500; color: var(--accent); cursor: pointer; text-transform: none; letter-spacing: 0; }
+    .review-card-body { padding: 4px 0; }
+    .review-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 16px; gap: 16px; }
+    .review-row:not(:last-child) { border-bottom: 1px solid rgba(63,63,70,.3); }
+    .review-key { font-size: 14px; color: var(--subtle); flex-shrink: 0; }
+    .review-val { font-size: 14px; font-weight: 600; color: var(--text); text-align: right; word-break: break-word; }
+
+    .warn { padding: 14px 18px; border-radius: var(--radius); background: var(--red-bg); border: 1px solid rgba(248,113,113,.2); color: var(--text); font-size: 14px; line-height: 1.5; white-space: pre-wrap; display: none; margin-top: 16px; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9,9,11,.8); border-top: 1px solid var(--border); }
+    :root.light .bottom-nav { background: rgba(250,250,250,.9); }
+    .bottom-nav-inner { max-width: 680px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-steps { display: flex; gap: 4px; align-items: center; }
+    .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: var(--transition); cursor: pointer; }
+    .nav-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
+    .nav-dot.done { background: var(--green); }
+    .nav-actions { display: flex; gap: 8px; }
+
+    .btn { padding: 10px 20px; border-radius: 10px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 6px; border: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 2px 12px rgba(99,102,241,.25); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,.35); }
+    .btn-secondary { background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
+    .btn-secondary:hover { border-color: var(--border2); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-in { animation: fadeInUp .35s cubic-bezier(.4,0,.2,1) both; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
+  <script>(function(){if(localStorage.getItem('conceptlb_theme')==='light')document.documentElement.classList.add('light');})()</script>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <h1>Concept LB — Concept Plan Wizard</h1>
-          <div class="sub">Phase 1 intake &bull; cleaner inputs &rarr; stronger output</div>
-        </div>
-      </div>
-
-      <div class="topbar-actions">
-        <span class="pill" id="autosaveState">Autosave: on</span>
-        <button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
-        <button class="btn btn-ghost" type="button" onclick="resetWizard()">Reset</button>
-        <button class="btn btn-ghost" type="button" onclick="window.location.href='/plans'">My Plans</button>
-      </div>
+  <div class="chrome"><div class="chrome-inner">
+    <div class="chrome-brand"><div class="chrome-logo"></div><span>Concept LB</span></div>
+    <div class="chrome-actions">
+      <button class="chrome-btn" onclick="window.location.href='/plans'">My Plans</button>
+      <button class="chrome-btn" onclick="resetWizard()">Reset</button>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
-
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+  </div></div>
+  <div class="progress-track"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+  <div class="main" id="main"><div id="stepContent" class="animate-in"></div><div class="warn" id="warnBox"></div></div>
+  <div class="bottom-nav"><div class="bottom-nav-inner">
+    <div class="nav-steps" id="navDots"></div>
+    <div class="nav-actions">
+      <button class="btn btn-secondary" id="btnBack" onclick="goBack()">Back</button>
+      <button class="btn btn-primary" id="btnNext" onclick="goNext()">Continue</button>
     </div>
-
-    <div class="wizard-grid">
-      <!-- Left: Stepper -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-label">Steps</div>
-          <div class="card-title">Answer fast. Generate better.</div>
-        </div>
-        <div class="steps" id="steps"></div>
-      </div>
-
-      <!-- Right: Form -->
-      <div class="card">
-        <div class="card-body">
-          <div class="panel-header">
-            <div>
-              <h2 id="panelTitle">Step</h2>
-              <div class="desc" id="panelDesc"></div>
-            </div>
-            <div class="pill" id="progressPill">0%</div>
-          </div>
-
-          <div id="panelBody"></div>
-
-          <div class="warn-box" id="warnBox"></div>
-
-          <div class="nav-footer">
-            <button class="btn btn-secondary" id="btnBack" type="button" onclick="goBack()">&#8592; Back</button>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn btn-secondary" id="btnSave" type="button" onclick="saveNow()">Save</button>
-              <button class="btn btn-primary" id="btnNext" type="button" onclick="goNext()">Next &#8594;</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  </div></div>
 
   <script>
-    // Theme toggle
-    function toggleTheme() {
-      const html = document.documentElement;
-      const isLight = html.classList.toggle('light');
-      localStorage.setItem('conceptlb_theme', isLight ? 'light' : 'dark');
-      document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
-    }
+    function toggleTheme(){const l=document.documentElement.classList.toggle('light');localStorage.setItem('conceptlb_theme',l?'light':'dark');document.getElementById('themeBtn').textContent=l?'☀️':'🌙';}
+    if(localStorage.getItem('conceptlb_theme')==='light')document.getElementById('themeBtn').textContent='☀️';
 
-    // Apply saved theme on load
-    (function() {
-      const saved = localStorage.getItem('conceptlb_theme');
-      if (saved === 'light') {
-        document.documentElement.classList.add('light');
-        document.addEventListener('DOMContentLoaded', () => {
-          const btn = document.getElementById('themeBtn');
-          if (btn) btn.textContent = '☀️';
-        });
-      }
-    })();
+    const STORAGE_KEY="conceptlb_intake_v1";
+    const DEFAULTS={concept_name:"",one_liner:"",cuisine_type:"Modern Mediterranean",cuisine_other:"",service_model:"Dine-in",differentiator:"",country:"Lebanon",city:"Beirut",neighborhood_type:"street",size_sqm:35,seating_capacity:18,delivery_flag:true,alcohol_flag:false,target_audience:["Young professionals","Foodies"],price_positioning:"mid",competitors:[],competitive_edge:"",brand_personality_keywords:["bold","minimal"],interior_mood_keywords:["clean","modern"],meal_periods:["lunch","dinner"],beverage_direction:"coffee_focus",operating_hours:"12:00-23:30",founder_background:"",experience_level:"first_time_founder",ownership_structure:"solo",budget_tier:"mid",expected_daily_orders:null,avg_ticket_usd:null,monthly_rent_usd:null,capex_budget_usd:null,staff_model:"lean",sales_mix_dinein_pct:40,sales_mix_takeaway_pct:40,sales_mix_delivery_pct:20,target_cogs_pct:null,kitchen_type:"full_line",operating_days_per_week:6,alcohol_license_status:"not_allowed",opening_budget_usd:null,funding_equity_pct:50,funding_loan_pct:50,avg_check_morning:null,avg_check_daytime:null,avg_check_evening:null,revenue_growth_pct:3,ramp_up_months:4,ramp_start_pct:60,expected_daily_orders__source:"user_unknown",avg_ticket_usd__source:"user_unknown",monthly_rent_usd__source:"user_unknown",capex_budget_usd__source:"user_unknown",staff_model__source:"user_unknown",sales_mix__source:"user_unknown",target_cogs_pct__source:"user_unknown",kitchen_type__source:"user_unknown",operating_days_per_week__source:"user_unknown",alcohol_license_status__source:"user_unknown",opening_budget_usd__source:"user_unknown",_model:"gpt-5.4-nano-2026-03-17"};
+    const OPT={cuisine:["Modern Mediterranean","Lebanese","Italian","Japanese","Mexican","Burgers","Cafe","Other"],service:[{v:"qsr",t:"QSR / Fast Casual"},{v:"hybrid",t:"Hybrid (dine-in + takeaway)"},{v:"dine_in",t:"Full Dine-in"}],neighborhood:[{v:"street",t:"Street"},{v:"mall",t:"Mall"},{v:"residential",t:"Residential"},{v:"business",t:"Business District"},{v:"seaside",t:"Seaside"}],price:[{v:"affordable",t:"Affordable"},{v:"mid",t:"Mid-range"},{v:"premium",t:"Premium"}],meals:["breakfast","brunch","lunch","dinner","late_night"],beverage:[{v:"coffee_focus",t:"Coffee Focus"},{v:"juice_bar",t:"Juice Bar"},{v:"mocktails",t:"Mocktails"},{v:"full_bar",t:"Full Bar"}],experience:[{v:"new",t:"First-time Founder"},{v:"some",t:"Some Experience"},{v:"expert",t:"Expert Operator"}],ownership:[{v:"solo",t:"Solo"},{v:"partners",t:"Partners"},{v:"family",t:"Family"},{v:"investors",t:"Investors"}],budget:[{v:"starter",t:"Starter"},{v:"mid",t:"Mid-tier"},{v:"premium",t:"Premium"}],audience:["Young professionals","Families","Tourists","Students","Health-conscious diners","Office workers","Night crowd"],brand_kw:["bold","minimal","playful","premium","friendly","fast","craft","clean","warm","urban"],mood_kw:["clean","modern","industrial","cozy","bright","dark","natural","minimal","colorful","heritage"],staff:[{v:"lean",t:"Lean (2-3)"},{v:"standard",t:"Standard (4-6)"},{v:"full",t:"Full (7+)"},{v:"custom",t:"Custom"}],kitchen:[{v:"full_line",t:"Full Cooking Line"},{v:"prep_finish",t:"Prep + Finishing"},{v:"assembly_only",t:"Assembly Only"},{v:"central_kitchen",t:"Central Kitchen"}],alcohol_status:[{v:"confirmed",t:"Confirmed"},{v:"applying",t:"Applying"},{v:"not_allowed",t:"Not Allowed"}]};
+    const STEPS=[{id:"identity",title:"What's your concept?",desc:"The name, the pitch, and what makes it different."},{id:"location",title:"Where will it live?",desc:"Location, size, and physical format of your restaurant."},{id:"brand",title:"Who are you serving?",desc:"Target audience, pricing, brand personality, and competitive landscape."},{id:"ops",title:"How will it operate?",desc:"Meal periods, beverages, team structure, and your background."},{id:"anchors",title:"Financial foundations",desc:"The numbers that drive your projections. Skip what you don't know yet."},{id:"review",title:"Ready to generate",desc:"Review everything, then we'll build your full concept plan."}];
 
-    // ------------------------------
-    // Schema: steps + fields
-    // ------------------------------
-    const STORAGE_KEY = "conceptlb_intake_v1";
-    const DEFAULTS = {
-      concept_name: "",
-      one_liner: "",
-      cuisine_type: "Modern Mediterranean",
-      cuisine_other: "",
-      service_model: "Dine-in",
-      differentiator: "",
+    let S=loadState(),step=0;
+    function loadState(){try{const r=localStorage.getItem(STORAGE_KEY);return r?{...structuredClone(DEFAULTS),...JSON.parse(r)}:structuredClone(DEFAULTS);}catch{return structuredClone(DEFAULTS);}}
+    function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(S));}
+    function resetWizard(){if(!confirm("Reset all fields?"))return;S=structuredClone(DEFAULTS);step=0;save();render();}
 
-      country: "Lebanon",
-      city: "Beirut",
-      neighborhood_type: "street",
-      size_sqm: 35,
-      seating_capacity: 18,
-      delivery_flag: true,
-      alcohol_flag: false,
+    function h(tag,props={},...kids){const el=document.createElement(tag);Object.entries(props).forEach(([k,v])=>{if(k==='class')el.className=v;else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else el.setAttribute(k,v);});kids.flat().forEach(c=>{if(typeof c==='string')el.appendChild(document.createTextNode(c));else if(c)el.appendChild(c);});return el;}
 
-      target_audience: ["Young professionals", "Foodies"],
-      price_positioning: "mid",
-      competitors: [],
-      competitive_edge: "",
-      brand_personality_keywords: ["bold", "minimal"],
-      interior_mood_keywords: ["clean", "modern"],
+    function fieldGroup({label,required,hint,full,content}){const fg=h('div',{class:'field-group'+(full?' full':'')});const fl=h('div',{class:'field-label'});fl.appendChild(h('label',{},label));if(required)fl.appendChild(h('span',{class:'req'},'Required'));fg.appendChild(fl);fg.appendChild(content);if(hint)fg.appendChild(h('div',{class:'field-hint'},hint));return fg;}
+    function textInput(key,{placeholder=''}={}){const el=h('input',{placeholder,value:S[key]??''});el.oninput=()=>{S[key]=el.value;save();};return el;}
+    function numberInput(key,{min,max}={}){const el=h('input',{type:'number',value:S[key]??''});if(min!=null)el.min=min;if(max!=null)el.max=max;el.oninput=()=>{const n=Number(el.value);S[key]=Number.isFinite(n)?n:null;save();};return el;}
+    function textArea(key,{placeholder=''}={}){const el=h('textarea',{placeholder});el.value=S[key]??'';el.oninput=()=>{S[key]=el.value;save();};return el;}
+    function selectInput(key,options){const el=h('select');options.forEach(o=>{el.appendChild(h('option',{value:typeof o==='string'?o:o.v},typeof o==='string'?o:o.t));});el.value=S[key];el.onchange=()=>{S[key]=el.value;save();render();};return el;}
+    function boolSelect(key){const el=h('select');[{v:'true',t:'Yes'},{v:'false',t:'No'}].forEach(o=>el.appendChild(h('option',{value:o.v},o.t)));el.value=String(!!S[key]);el.onchange=()=>{S[key]=el.value==='true';save();};return el;}
+    function chipsMulti(key,choices,mx=3){const box=h('div',{class:'chips'});const set=new Set((Array.isArray(S[key])?S[key]:[]).filter(x=>choices.includes(x)));S[key]=[...set];save();choices.forEach(c=>{const chip=h('div',{class:'chip'+(set.has(c)?' on':'')},c);chip.onclick=()=>{if(set.has(c))set.delete(c);else if(set.size<mx)set.add(c);else return;S[key]=[...set];save();render();};box.appendChild(chip);});return box;}
+    function tagInput(key){const tags=Array.isArray(S[key])?S[key]:[];const box=h('div',{class:'tag-box'});function rebuild(){box.innerHTML='';tags.forEach((t,i)=>{const btn=h('button',{type:'button',onclick:()=>{tags.splice(i,1);S[key]=tags;save();rebuild();}},'×');box.appendChild(h('span',{class:'tag'},t,btn));});const inp=h('input',{class:'tag-input',placeholder:'Type and press Enter…'});inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const v=inp.value.trim();if(v&&!tags.includes(v)){tags.push(v);S[key]=tags;save();}rebuild();}};box.appendChild(inp);}rebuild();return box;}
+    function sourceToggle(sk,vk=[]){const row=h('div',{class:'source-row'});row.appendChild(h('span',{},'Confidence:'));const sel=h('select');[{v:'user_provided',t:'I know this'},{v:'user_unknown',t:'Not sure yet'}].forEach(o=>sel.appendChild(h('option',{value:o.v},o.t)));sel.value=S[sk]||'user_unknown';sel.onchange=()=>{S[sk]=sel.value;if(sel.value==='user_unknown')vk.forEach(k=>S[k]=null);save();render();};row.appendChild(sel);return row;}
 
-      meal_periods: ["lunch", "dinner"],
-      beverage_direction: "coffee_focus",
-      operating_hours: "12:00-23:30",
-      founder_background: "",
-      experience_level: "first_time_founder",
-      ownership_structure: "solo",
-      budget_tier: "mid",
+    function renderIdentity(){const f=h('div',{class:'fields'});const r1=h('div',{class:'field-row'});r1.appendChild(fieldGroup({label:'Concept Name',required:true,hint:'Short, memorable, and brandable.',content:textInput('concept_name',{placeholder:'e.g., Olive & Thyme'})}));r1.appendChild(fieldGroup({label:'Cuisine Type',required:true,content:selectInput('cuisine_type',OPT.cuisine)}));f.appendChild(r1);if(S.cuisine_type==='Other')f.appendChild(fieldGroup({label:'Cuisine (specify)',required:true,full:true,content:textInput('cuisine_other',{placeholder:'e.g., Modern Levantine Street Food'})}));f.appendChild(fieldGroup({label:'One-liner',required:true,full:true,hint:'One sentence that sells the idea instantly.',content:textInput('one_liner',{placeholder:'e.g., Modern Mediterranean kitchen with Lebanese roots'})}));const r2=h('div',{class:'field-row'});r2.appendChild(fieldGroup({label:'Service Model',required:true,hint:'Drives plan structure and assumptions.',content:selectInput('service_model',OPT.service)}));r2.appendChild(h('div'));f.appendChild(r2);f.appendChild(fieldGroup({label:'What makes you different?',required:true,full:true,hint:'Your edge vs. nearby competitors.',content:textArea('differentiator',{placeholder:'e.g., Fresh locally-sourced ingredients with a Lebanese twist on Mediterranean classics.'})}));return f;}
 
-            // --- Financial Anchors ---
-      expected_daily_orders: null,
-      avg_ticket_usd: null,
-      monthly_rent_usd: null,
-      capex_budget_usd: null,
-      staff_model: "lean",
+    function renderLocation(){const f=h('div',{class:'fields'});const r1=h('div',{class:'field-row'});r1.appendChild(fieldGroup({label:'Country',required:true,content:textInput('country')}));r1.appendChild(fieldGroup({label:'City',required:true,content:textInput('city')}));f.appendChild(r1);const r2=h('div',{class:'field-row'});r2.appendChild(fieldGroup({label:'Neighborhood Type',required:true,content:selectInput('neighborhood_type',OPT.neighborhood)}));r2.appendChild(fieldGroup({label:'Size (sqm)',required:true,hint:'Total floor area.',content:numberInput('size_sqm',{min:5,max:1000})}));f.appendChild(r2);const r3=h('div',{class:'field-row'});r3.appendChild(fieldGroup({label:'Seating Capacity',required:true,hint:'0 = delivery only.',content:numberInput('seating_capacity',{min:0,max:400})}));r3.appendChild(fieldGroup({label:'Delivery?',required:true,content:boolSelect('delivery_flag')}));f.appendChild(r3);f.appendChild(fieldGroup({label:'Alcohol Served?',required:true,hint:'Enables the alcoholic beverage program.',content:boolSelect('alcohol_flag')}));return f;}
 
-      sales_mix_dinein_pct: 40,
-      sales_mix_takeaway_pct: 40,
-      sales_mix_delivery_pct: 20,
+    function renderBrand(){const f=h('div',{class:'fields'});f.appendChild(fieldGroup({label:'Target Audience',full:true,hint:'Select 1-3.',content:chipsMulti('target_audience',OPT.audience)}));f.appendChild(fieldGroup({label:'Price Positioning',required:true,content:selectInput('price_positioning',OPT.price)}));f.appendChild(fieldGroup({label:'Competitors',full:true,hint:'Type a name and press Enter.',content:tagInput('competitors')}));f.appendChild(fieldGroup({label:'Your competitive edge',full:true,hint:'How you win.',content:textArea('competitive_edge',{placeholder:'e.g., Faster service, better quality, cleaner brand.'})}));f.appendChild(fieldGroup({label:'Brand Personality',full:true,hint:'Pick 2-5.',content:chipsMulti('brand_personality_keywords',OPT.brand_kw,5)}));f.appendChild(fieldGroup({label:'Interior Mood',full:true,hint:'Pick 2-5.',content:chipsMulti('interior_mood_keywords',OPT.mood_kw,5)}));return f;}
 
-      target_cogs_pct: null,
-      kitchen_type: "full_line",
-      operating_days_per_week: 6,
-      alcohol_license_status: "not_allowed",
+    function renderOps(){const f=h('div',{class:'fields'});f.appendChild(fieldGroup({label:'Meal Periods',required:true,full:true,hint:'Select at least one.',content:chipsMulti('meal_periods',OPT.meals,5)}));const r1=h('div',{class:'field-row'});r1.appendChild(fieldGroup({label:'Beverage Direction',required:true,content:selectInput('beverage_direction',OPT.beverage)}));r1.appendChild(fieldGroup({label:'Operating Hours',required:true,content:textInput('operating_hours',{placeholder:'12:00 - 23:30'})}));f.appendChild(r1);f.appendChild(fieldGroup({label:'Founder Background',full:true,hint:'1-3 sentences. Woven into the plan.',content:textArea('founder_background',{placeholder:'e.g., 10 years in F&B, founded Fat Monk in Beirut.'})}));const r2=h('div',{class:'field-row'});r2.appendChild(fieldGroup({label:'Experience Level',required:true,content:selectInput('experience_level',OPT.experience)}));r2.appendChild(fieldGroup({label:'Ownership',required:true,content:selectInput('ownership_structure',OPT.ownership)}));f.appendChild(r2);f.appendChild(fieldGroup({label:'Budget Tier',required:true,content:selectInput('budget_tier',OPT.budget)}));return f;}
 
-      // --- P2: Financial model anchors ---
-      opening_budget_usd: null,
-      funding_equity_pct: 50,
-      funding_loan_pct: 50,
-      avg_check_morning: null,
-      avg_check_daytime: null,
-      avg_check_evening: null,
-      revenue_growth_pct: 3,
-      ramp_up_months: 4,
-      ramp_start_pct: 60,
+    function renderAnchors(){const f=h('div',{class:'fields'});function af(label,key,sk,hint,opts={}){const fg=fieldGroup({label,full:true,hint,content:numberInput(key,opts)});fg.appendChild(sourceToggle(sk||(key+'__source'),[key]));return fg;}f.appendChild(af('Expected daily orders','expected_daily_orders',null,'Drives revenue and staffing.',{min:0,max:2000}));f.appendChild(af('Average ticket (USD)','avg_ticket_usd',null,'Even a rough number helps.',{min:0,max:1000}));f.appendChild(af('Monthly rent (USD)','monthly_rent_usd',null,'AI can\'t guess rent. High impact.',{min:0,max:50000}));f.appendChild(af('Setup budget / capex (USD)','capex_budget_usd',null,'Total investment for opening.',{min:0,max:1000000}));f.appendChild(fieldGroup({label:'Staff model',full:true,hint:'Used for payroll feasibility.',content:selectInput('staff_model',OPT.staff)}));const mx=h('div',{class:'field-row',style:{gridTemplateColumns:'1fr 1fr 1fr'}});mx.appendChild(fieldGroup({label:'Dine-in %',content:numberInput('sales_mix_dinein_pct',{min:0,max:100})}));mx.appendChild(fieldGroup({label:'Takeaway %',content:numberInput('sales_mix_takeaway_pct',{min:0,max:100})}));mx.appendChild(fieldGroup({label:'Delivery %',content:numberInput('sales_mix_delivery_pct',{min:0,max:100})}));const mw=h('div',{class:'field-group full'});mw.appendChild(h('div',{class:'field-label'},h('label',{},'Sales channel mix (~100%)')));mw.appendChild(mx);mw.appendChild(sourceToggle('sales_mix__source',['sales_mix_dinein_pct','sales_mix_takeaway_pct','sales_mix_delivery_pct']));f.appendChild(mw);f.appendChild(af('Target food cost % (COGS)','target_cogs_pct',null,'Typical: 25-40%.',{min:0,max:100}));const r3=h('div',{class:'field-row'});const kt=fieldGroup({label:'Kitchen type',content:selectInput('kitchen_type',OPT.kitchen)});kt.appendChild(sourceToggle('kitchen_type__source'));r3.appendChild(kt);const dy=fieldGroup({label:'Operating days/week',content:numberInput('operating_days_per_week',{min:1,max:7})});dy.appendChild(sourceToggle('operating_days_per_week__source',['operating_days_per_week']));r3.appendChild(dy);f.appendChild(r3);const al=fieldGroup({label:'Alcohol license status',full:true,hint:'Legal reality, not just intent.',content:selectInput('alcohol_license_status',OPT.alcohol_status)});al.appendChild(sourceToggle('alcohol_license_status__source'));f.appendChild(al);const dv=h('div',{class:'divider'});dv.innerHTML='<h3>Financial Model</h3><p>These generate your separate Financial Model PDF. Leave blank for defaults.</p>';f.appendChild(dv);f.appendChild(af('Opening budget (USD)','opening_budget_usd',null,'Total capital for opening.',{min:0}));const fr=h('div',{class:'field-row'});fr.appendChild(fieldGroup({label:'Equity %',content:numberInput('funding_equity_pct',{min:0,max:100})}));fr.appendChild(fieldGroup({label:'Loan %',content:numberInput('funding_loan_pct',{min:0,max:100})}));f.appendChild(fr);const cr=h('div',{class:'field-row',style:{gridTemplateColumns:'1fr 1fr 1fr'}});cr.appendChild(fieldGroup({label:'Avg check: Morning',content:numberInput('avg_check_morning',{min:0})}));cr.appendChild(fieldGroup({label:'Avg check: Daytime',content:numberInput('avg_check_daytime',{min:0})}));cr.appendChild(fieldGroup({label:'Avg check: Evening',content:numberInput('avg_check_evening',{min:0})}));f.appendChild(cr);const pr=h('div',{class:'field-row',style:{gridTemplateColumns:'1fr 1fr 1fr'}});pr.appendChild(fieldGroup({label:'Growth %/year',hint:'Default: 3%',content:numberInput('revenue_growth_pct',{min:0,max:20})}));pr.appendChild(fieldGroup({label:'Ramp-up months',hint:'Default: 4',content:numberInput('ramp_up_months',{min:1,max:12})}));pr.appendChild(fieldGroup({label:'Ramp start %',hint:'Default: 60%',content:numberInput('ramp_start_pct',{min:10,max:100})}));f.appendChild(pr);return f;}
 
-      // --- sources (confidence) ---
-      expected_daily_orders__source: "user_unknown",
-      avg_ticket_usd__source: "user_unknown",
-      monthly_rent_usd__source: "user_unknown",
-      capex_budget_usd__source: "user_unknown",
-      staff_model__source: "user_unknown",
-      sales_mix__source: "user_unknown",
-      target_cogs_pct__source: "user_unknown",
-      kitchen_type__source: "user_unknown",
-      operating_days_per_week__source: "user_unknown",
-      alcohol_license_status__source: "user_unknown",
-      opening_budget_usd__source: "user_unknown",
-    };
+    function renderReview(){const f=h('div',{class:'review-grid'});function card(title,si,rows){const c=h('div',{class:'review-card'});const hd=h('div',{class:'review-card-header'},title);hd.appendChild(h('span',{class:'edit-link',onclick:()=>{step=si;render();}},'Edit'));c.appendChild(hd);const bd=h('div',{class:'review-card-body'});rows.forEach(([k,v])=>{const rw=h('div',{class:'review-row'});rw.appendChild(h('span',{class:'review-key'},k));rw.appendChild(h('span',{class:'review-val'},String(v??'—')));bd.appendChild(rw);});c.appendChild(bd);return c;}
+    f.appendChild(card('Concept Identity',0,[['Name',S.concept_name],['Cuisine',S.cuisine_type==='Other'?S.cuisine_other:S.cuisine_type],['One-liner',S.one_liner],['Service Model',S.service_model]]));f.appendChild(card('Location & Format',1,[['Location',S.city+', '+S.country],['Neighborhood',S.neighborhood_type],['Size',S.size_sqm+' sqm / '+S.seating_capacity+' seats'],['Delivery',S.delivery_flag?'Yes':'No'],['Alcohol',S.alcohol_flag?'Yes':'No']]));f.appendChild(card('Market & Brand',2,[['Audience',(S.target_audience||[]).join(', ')||'—'],['Pricing',S.price_positioning],['Competitors',(S.competitors||[]).join(', ')||'—'],['Brand',(S.brand_personality_keywords||[]).join(', ')||'—']]));f.appendChild(card('Operations',3,[['Meals',(S.meal_periods||[]).join(', ')],['Hours',S.operating_hours],['Beverage',S.beverage_direction],['Experience',S.experience_level]]));f.appendChild(card('Financial Anchors',4,[['Daily orders',S.expected_daily_orders??'—'],['Avg ticket',S.avg_ticket_usd?'$'+S.avg_ticket_usd:'—'],['Monthly rent',S.monthly_rent_usd?'$'+S.monthly_rent_usd:'—'],['Opening budget',S.opening_budget_usd?'$'+S.opening_budget_usd.toLocaleString():'—']]));const mc=h('div',{class:'review-card'});const mh=h('div',{class:'review-card-header'},'AI Model');mc.appendChild(mh);const mb=h('div',{class:'review-card-body',style:{padding:'16px'}});const ms=h('select',{style:{maxWidth:'400px'}});[{v:'gpt-5.4-nano-2026-03-17',t:'GPT-5.4 Nano — Fast & cheap (~$0.65/plan)'},{v:'gpt-5.4-2026-03-05',t:'GPT-5.4 — High quality (~$3-4/plan)'}].forEach(o=>ms.appendChild(h('option',{value:o.v},o.t)));ms.value=S._model||'gpt-5.4-nano-2026-03-17';ms.onchange=()=>{S._model=ms.value;save();};mb.appendChild(fieldGroup({label:'Choose AI model for generation',hint:'Nano is great for testing. Use GPT-5.4 for production-quality plans.',content:ms}));mc.appendChild(mb);f.appendChild(mc);return f;}
 
-    const OPTIONS = {
-      cuisine: ["Modern Mediterranean", "Lebanese", "Italian", "Japanese", "Mexican", "Burgers", "Cafe", "Other"],
-      service_model: [
-        { v: "qsr", t: "QSR" },
-        { v: "hybrid", t: "Hybrid (dine-in + takeaway/delivery)" },
-        { v: "dine_in", t: "Dine-in" }
-      ],
-      neighborhood: [
-        { v: "street", t: "Street" },
-        { v: "mall", t: "Mall" },
-        { v: "residential", t: "Residential" },
-        { v: "business", t: "Business district" },
-        { v: "seaside", t: "Seaside" }
-      ],
-      price: [
-        { v: "affordable", t: "Affordable" },
-        { v: "mid", t: "Mid" },
-        { v: "premium", t: "Premium" }
-      ],
-      meal_periods: ["breakfast", "brunch", "lunch", "dinner", "late_night"],
-      beverage_direction: [
-        { v: "coffee_focus", t: "Coffee focus" },
-        { v: "juice_bar", t: "Juice bar" },
-        { v: "mocktails", t: "Mocktails" },
-        { v: "full_bar", t: "Full bar (if alcohol enabled)" }
-      ],
-      experience_level: [
-        { v: "new", t: "New (first-time)" },
-        { v: "some", t: "Some experience" },
-        { v: "expert", t: "Expert operator" }
-      ],
-      ownership_structure: [
-        { v: "solo", t: "Solo" },
-        { v: "partners", t: "Partners" },
-        { v: "family", t: "Family" },
-        { v: "investors", t: "Investors" }
-      ],
-      budget_tier: [
-        { v: "starter", t: "Starter" },
-        { v: "mid", t: "Mid-tier" },
-        { v: "premium", t: "Premium" }
-      ],
-      target_audience: [
-        "Young professionals",
-        "Families",
-        "Tourists",
-        "Students",
-        "Health-conscious diners",
-        "Office workers",
-        "Night crowd"
-      ],
-      brand_keywords: ["bold", "minimal", "playful", "premium", "friendly", "fast", "craft", "clean", "warm", "urban"],
-      interior_keywords: ["clean", "modern", "industrial", "cozy", "bright", "dark", "natural", "minimal", "colorful", "heritage"],
-      staff_model: [
-        { v: "lean", t: "Lean (2–3 people)" },
-        { v: "standard", t: "Standard (4–6 people)" },
-        { v: "full", t: "Full team (7+)" },
-        { v: "custom", t: "Custom" }
-      ],
-      kitchen_type: [
-        { v: "full_line", t: "Full cooking line" },
-        { v: "prep_finish", t: "Prep + finishing" },
-        { v: "assembly_only", t: "Assembly only" },
-        { v: "central_kitchen", t: "Central kitchen support" }
-      ],
-      alcohol_license_status: [
-        { v: "confirmed", t: "Confirmed" },
-        { v: "applying", t: "Applying / planned" },
-        { v: "not_allowed", t: "Not allowed / no license" }
-      ],
-    };
+    function validate(idx){const id=STEPS[idx].id,e=[];const blank=v=>!v||String(v).trim()==='';if(id==='identity'){if(blank(S.concept_name))e.push('Concept Name is required.');if(blank(S.one_liner))e.push('One-liner is required.');if(blank(S.cuisine_type))e.push('Cuisine Type is required.');if(S.cuisine_type==='Other'&&blank(S.cuisine_other))e.push('Specify your cuisine.');if(blank(S.service_model))e.push('Service Model is required.');if(blank(S.differentiator))e.push('Differentiator is required.');}if(id==='location'){if(blank(S.country))e.push('Country is required.');if(blank(S.city))e.push('City is required.');const sz=Number(S.size_sqm),se=Number(S.seating_capacity);if(!Number.isFinite(sz)||sz<=0)e.push('Size must be positive.');if(!Number.isFinite(se)||se<0)e.push('Seating must be 0+.');if(se===0&&!S.delivery_flag)e.push('0 seats requires delivery.');}if(id==='brand'){if(blank(S.price_positioning))e.push('Price Positioning is required.');}if(id==='ops'){if(!(S.meal_periods||[]).length)e.push('Select at least one meal period.');if(blank(S.beverage_direction))e.push('Beverage Direction is required.');if(blank(S.operating_hours))e.push('Operating Hours is required.');if(blank(S.experience_level))e.push('Experience Level is required.');if(blank(S.ownership_structure))e.push('Ownership is required.');if(blank(S.budget_tier))e.push('Budget Tier is required.');}if(id==='anchors'&&S.sales_mix__source==='user_provided'){const t=(S.sales_mix_dinein_pct||0)+(S.sales_mix_takeaway_pct||0)+(S.sales_mix_delivery_pct||0);if(t<90||t>110)e.push('Channel mix should total ~100%.');}return e;}
 
-    const STEPS = [
-      { id: "identity", title: "Concept Identity", desc: "Name, positioning basics, and what makes it different." },
-      { id: "location", title: "Location & Format", desc: "Where it lives and how it operates physically." },
-      { id: "brand", title: "Market & Brand", desc: "Audience, pricing, competitors, and the vibe." },
-      { id: "ops", title: "Operations & Founder", desc: "Meal periods, beverages, hours, and founder intent." },
-      { id: "anchors", title: "Financial Anchors", desc: "Optional but powerful. Cuts down wrong assumptions." },
-      { id: "review", title: "Review & Generate", desc: "Confirm inputs, then generate your full concept plan." }
-    ];
+    function goBack(){if(step>0){step--;render();}}
+    async function goNext(){hideWarn();if(STEPS[step].id!=='review'){const errs=validate(step);if(errs.length){showWarn(errs.join('\n'));return;}step++;render();return;}const allOk=[0,1,2,3].every(i=>!validate(i).length);if(!allOk){showWarn('Some required fields are missing.');return;}save();await startJob();}
+    function showWarn(msg){const w=document.getElementById('warnBox');w.style.display='block';w.textContent=msg;}
+    function hideWarn(){const w=document.getElementById('warnBox');w.style.display='none';w.textContent='';}
 
-    // ------------------------------
-    // State
-    // ------------------------------
-    let state = loadState();
-    let currentStep = 0;
+    function render(){const s=STEPS[step];const root=document.getElementById('stepContent');root.innerHTML='';root.className='';void root.offsetWidth;root.className='animate-in';root.appendChild(h('div',{class:'step-badge'},'Step '+(step+1)+' of '+STEPS.length));root.appendChild(h('h1',{class:'step-title'},s.title));root.appendChild(h('p',{class:'step-desc'},s.desc));const renderers={identity:renderIdentity,location:renderLocation,brand:renderBrand,ops:renderOps,anchors:renderAnchors,review:renderReview};root.appendChild(renderers[s.id]());document.getElementById('progressBar').style.width=(step/(STEPS.length-1))*100+'%';const dots=document.getElementById('navDots');dots.innerHTML='';STEPS.forEach((_,i)=>{dots.appendChild(h('div',{class:'nav-dot'+(i===step?' active':'')+(i<step?' done':''),onclick:()=>{if(i<=step){step=i;render();}}}));});document.getElementById('btnBack').disabled=step===0;document.getElementById('btnBack').style.visibility=step===0?'hidden':'visible';document.getElementById('btnNext').textContent=s.id==='review'?'Generate Plan':'Continue';hideWarn();window.scrollTo({top:0,behavior:'smooth'});}
 
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return structuredClone(DEFAULTS);
-        const parsed = JSON.parse(raw);
-        return { ...structuredClone(DEFAULTS), ...parsed };
-      } catch (e) {
-        return structuredClone(DEFAULTS);
-      }
-    }
+    function buildPayload(){const p={...S};if(p.cuisine_type==='Other')p.cuisine_type=p.cuisine_other||'Other';delete p.cuisine_other;['target_audience','brand_personality_keywords','interior_mood_keywords','meal_periods','competitors'].forEach(k=>{p[k]=Array.isArray(p[k])?p[k]:[];});p.confidence={};['expected_daily_orders','avg_ticket_usd','monthly_rent_usd','capex_budget_usd','staff_model','sales_mix','target_cogs_pct','kitchen_type','operating_days_per_week','alcohol_license_status'].forEach(k=>{p.confidence[k]=S[k+'__source'];});Object.keys(p).filter(k=>k.endsWith('__source')).forEach(k=>delete p[k]);p._model=S._model||'gpt-5.4-nano-2026-03-17';return p;}
 
-    function persistState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      const pill = document.getElementById("autosaveState");
-      pill.textContent = "Autosave: saved";
-      setTimeout(() => pill.textContent = "Autosave: on", 700);
-    }
+    async function startJob(){const btn=document.getElementById('btnNext');btn.disabled=true;btn.textContent='Starting…';try{const res=await fetch('/api/generate-job?chunk_size=4&max_workers=3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildPayload())});if(!res.ok)throw new Error(await res.text()||'HTTP '+res.status);const data=await res.json();if(!data.job_id)throw new Error('No job_id.');window.location.href='/jobs/'+data.job_id;}catch(e){showWarn('Failed:\n'+(e.message||e));btn.disabled=false;btn.textContent='Generate Plan';}}
 
-    function resetWizard() {
-      if (!confirm("Reset all fields?")) return;
-      state = structuredClone(DEFAULTS);
-      currentStep = 0;
-      persistState();
-      renderAll();
-    }
-
-    function saveNow() {
-      persistState();
-    }
-
-    // ------------------------------
-    // UI Rendering
-    // ------------------------------
-    function renderAll() {
-      renderSteps();
-      renderPanel();
-      updateNav();
-      updateProgress();
-    }
-
-    function renderSteps() {
-      const root = document.getElementById("steps");
-      root.innerHTML = "";
-
-      STEPS.forEach((s, idx) => {
-        const done = idx < currentStep;
-        const active = idx === currentStep;
-        const clickable = idx <= maxReachableStep();
-
-        const el = document.createElement("div");
-        el.className = `step ${active ? "active" : ""} ${done ? "done" : ""} ${!clickable ? "disabled" : ""}`;
-        el.onclick = () => {
-          if (!clickable) return;
-          currentStep = idx;
-          renderAll();
-        };
-
-        const dot = document.createElement("div");
-        dot.className = "step-dot";
-        dot.textContent = done ? "✓" : String(idx + 1);
-
-        const meta = document.createElement("div");
-        meta.className = "step-meta";
-        meta.innerHTML = `<div class="step-title">${s.title}</div><div class="step-desc">${s.desc}</div>`;
-
-        el.appendChild(dot);
-        el.appendChild(meta);
-        root.appendChild(el);
-      });
-    }
-
-    function renderAnchors() {
-      const g = document.createElement("div");
-      g.className = "form-grid";
-
-      // Helper: Not sure toggle that sets source and optionally clears value
-      function notSureRow(sourceKey, valueKeys = []) {
-        const wrap = document.createElement("div");
-        wrap.style.display = "flex";
-        wrap.style.gap = "10px";
-        wrap.style.alignItems = "center";
-
-        const sel = document.createElement("select");
-        [
-          { v: "user_provided", t: "I know this" },
-          { v: "user_unknown", t: "Not sure" }
-        ].forEach(o => {
-          const opt = document.createElement("option");
-          opt.value = o.v; opt.textContent = o.t;
-          sel.appendChild(opt);
-        });
-        sel.value = state[sourceKey] || "user_unknown";
-
-        sel.onchange = () => {
-          state[sourceKey] = sel.value;
-          if (sel.value === "user_unknown") {
-            // clear values when unknown (prevents fake precision)
-            valueKeys.forEach(k => state[k] = null);
-          }
-          persistState();
-          renderAll();
-        };
-
-        const note = document.createElement("div");
-        note.style.color = "var(--muted)";
-        note.style.fontSize = "12px";
-        note.textContent = "Source";
-
-        wrap.appendChild(note);
-        wrap.appendChild(sel);
-        return wrap;
-      }
-
-      // Daily orders
-      const orders = field({
-        label: "Expected daily orders (month 1)",
-        required: false,
-        hint: "If unsure, leave it. This drives revenue + staffing.",
-        contentEl: inputNumber("expected_daily_orders", { min: 0, max: 2000 })
-      });
-      orders.classList.add("wide");
-      orders.appendChild(notSureRow("expected_daily_orders__source", ["expected_daily_orders"]));
-      g.appendChild(orders);
-
-      // Avg ticket
-      const ticket = field({
-        label: "Average ticket (USD)",
-        required: false,
-        hint: "Even a rough number improves projections a lot.",
-        contentEl: inputNumber("avg_ticket_usd", { min: 0, max: 1000 })
-      });
-      ticket.classList.add("wide");
-      ticket.appendChild(notSureRow("avg_ticket_usd__source", ["avg_ticket_usd"]));
-      g.appendChild(ticket);
-
-      // Rent
-      const rent = field({
-        label: "Monthly rent (USD)",
-        required: false,
-        hint: "AI cannot guess rent reliably. This is high impact.",
-        contentEl: inputNumber("monthly_rent_usd", { min: 0, max: 50000 })
-      });
-      rent.classList.add("wide");
-      rent.appendChild(notSureRow("monthly_rent_usd__source", ["monthly_rent_usd"]));
-      g.appendChild(rent);
-
-      // Capex
-      const capex = field({
-        label: "Setup budget / capex (USD)",
-        required: false,
-        hint: "Helps avoid unrealistic equipment assumptions.",
-        contentEl: inputNumber("capex_budget_usd", { min: 0, max: 1000000 })
-      });
-      capex.classList.add("wide");
-      capex.appendChild(notSureRow("capex_budget_usd__source", ["capex_budget_usd"]));
-      g.appendChild(capex);
-
-      // Staff model
-      const staff = field({
-        label: "Staff model at launch",
-        required: false,
-        hint: "Used for payroll and operational feasibility.",
-        contentEl: inputSelect("staff_model", OPTIONS.staff_model)
-      });
-      staff.classList.add("wide");
-      staff.appendChild(notSureRow("staff_model__source"));
-      g.appendChild(staff);
-
-      // Channel mix
-      const mix = document.createElement("div");
-      mix.className = "form-grid";
-      mix.appendChild(field({ label: "Dine-in %", contentEl: inputNumber("sales_mix_dinein_pct", { min: 0, max: 100 }) }));
-      mix.appendChild(field({ label: "Takeaway %", contentEl: inputNumber("sales_mix_takeaway_pct", { min: 0, max: 100 }) }));
-      mix.appendChild(field({ label: "Delivery %", contentEl: inputNumber("sales_mix_delivery_pct", { min: 0, max: 100 }) }));
-      const mixWrap = field({
-        label: "Sales channel mix (should total ~100%)",
-        required: false,
-        hint: "This affects staffing, packaging, and growth strategy.",
-        contentEl: mix
-      });
-      mixWrap.classList.add("wide");
-      mixWrap.appendChild(notSureRow("sales_mix__source", ["sales_mix_dinein_pct","sales_mix_takeaway_pct","sales_mix_delivery_pct"]));
-      g.appendChild(mixWrap);
-
-      // Target COGS %
-      const cogs = field({
-        label: "Target food cost % (COGS)",
-        required: false,
-        hint: "If unknown, AI will assume. Typical range: 25–40%.",
-        contentEl: inputNumber("target_cogs_pct", { min: 0, max: 100 })
-      });
-      cogs.classList.add("wide");
-      cogs.appendChild(notSureRow("target_cogs_pct__source", ["target_cogs_pct"]));
-      g.appendChild(cogs);
-
-      // Kitchen type
-      const kt = field({
-        label: "Kitchen type",
-        required: false,
-        hint: "Changes equipment + menu feasibility.",
-        contentEl: inputSelect("kitchen_type", OPTIONS.kitchen_type)
-      });
-      kt.classList.add("wide");
-      kt.appendChild(notSureRow("kitchen_type__source"));
-      g.appendChild(kt);
-
-      // Operating days
-      const days = field({
-        label: "Operating days per week",
-        required: false,
-        hint: "Revenue projections assume this.",
-        contentEl: inputNumber("operating_days_per_week", { min: 1, max: 7 })
-      });
-      days.classList.add("wide");
-      days.appendChild(notSureRow("operating_days_per_week__source", ["operating_days_per_week"]));
-      g.appendChild(days);
-
-      // Alcohol license status
-      const alc = field({
-        label: "Alcohol license status",
-        required: false,
-        hint: "Different from alcohol_flag (intent). This is legal reality.",
-        contentEl: inputSelect("alcohol_license_status", OPTIONS.alcohol_license_status)
-      });
-      alc.classList.add("wide");
-      alc.appendChild(notSureRow("alcohol_license_status__source"));
-      g.appendChild(alc);
-
-      // --- P2: Financial Model Inputs ---
-      const divider = document.createElement("div");
-      divider.className = "section-divider";
-      divider.innerHTML = '<h3>Financial Model Inputs</h3><p>Optional — used to generate the separate Financial Model PDF. Leave blank for industry defaults.</p>';
-      g.appendChild(divider);
-
-      // Opening budget
-      const budget = field({
-        label: "Opening Budget (USD)",
-        required: false,
-        hint: "Total capital available for opening (fit-out, equipment, working capital).",
-        contentEl: inputNumber("opening_budget_usd", { min: 0 })
-      });
-      budget.classList.add("wide");
-      budget.appendChild(notSureRow("opening_budget_usd__source", ["opening_budget_usd"]));
-      g.appendChild(budget);
-
-      // Funding equity %
-      const equity = field({
-        label: "Funding Equity %",
-        required: false,
-        hint: "Percentage of opening budget funded by equity.",
-        contentEl: inputNumber("funding_equity_pct", { min: 0, max: 100 })
-      });
-      equity.classList.add("wide");
-      g.appendChild(equity);
-
-      // Funding loan %
-      const loan = field({
-        label: "Funding Loan %",
-        required: false,
-        hint: "Percentage of opening budget funded by loan.",
-        contentEl: inputNumber("funding_loan_pct", { min: 0, max: 100 })
-      });
-      loan.classList.add("wide");
-      g.appendChild(loan);
-
-      // Avg check morning
-      const checkMorning = field({
-        label: "Avg Check Morning (USD)",
-        required: false,
-        hint: "Average spend per customer during morning service.",
-        contentEl: inputNumber("avg_check_morning", { min: 0 })
-      });
-      checkMorning.classList.add("wide");
-      g.appendChild(checkMorning);
-
-      // Avg check daytime
-      const checkDay = field({
-        label: "Avg Check Daytime (USD)",
-        required: false,
-        hint: "Average spend per customer during daytime service.",
-        contentEl: inputNumber("avg_check_daytime", { min: 0 })
-      });
-      checkDay.classList.add("wide");
-      g.appendChild(checkDay);
-
-      // Avg check evening
-      const checkEvening = field({
-        label: "Avg Check Evening (USD)",
-        required: false,
-        hint: "Average spend per customer during evening service.",
-        contentEl: inputNumber("avg_check_evening", { min: 0 })
-      });
-      checkEvening.classList.add("wide");
-      g.appendChild(checkEvening);
-
-      // Revenue growth %/year
-      const growth = field({
-        label: "Revenue Growth %/year",
-        required: false,
-        hint: "Annual revenue growth rate assumption (default: 3%).",
-        contentEl: inputNumber("revenue_growth_pct", { min: 0, max: 20 })
-      });
-      growth.classList.add("wide");
-      g.appendChild(growth);
-
-      // Ramp-up months
-      const rampMonths = field({
-        label: "Ramp-Up Months",
-        required: false,
-        hint: "How many months to reach full revenue (default: 4).",
-        contentEl: inputNumber("ramp_up_months", { min: 1, max: 12 })
-      });
-      rampMonths.classList.add("wide");
-      g.appendChild(rampMonths);
-
-      // Ramp start %
-      const rampStart = field({
-        label: "Ramp Start %",
-        required: false,
-        hint: "Revenue percentage at month 1 of ramp-up (default: 60%).",
-        contentEl: inputNumber("ramp_start_pct", { min: 10, max: 100 })
-      });
-      rampStart.classList.add("wide");
-      g.appendChild(rampStart);
-
-      return g;
-    }
-
-    function updateProgress() {
-      const pct = Math.round((currentStep / (STEPS.length - 1)) * 100);
-      document.getElementById("progressPill").textContent = `${pct}%`;
-      const bar = document.getElementById("progressBar");
-      if (bar) bar.style.width = `${pct}%`;
-    }
-
-    function updateNav() {
-      document.getElementById("btnBack").disabled = currentStep === 0;
-
-      const isReview = STEPS[currentStep].id === "review";
-      document.getElementById("btnSave").style.display = isReview ? "none" : "inline-flex";
-      document.getElementById("btnNext").textContent = isReview ? "Generate Full Document" : "Next →";
-    }
-
-    function renderPanel() {
-      const step = STEPS[currentStep];
-      document.getElementById("panelTitle").textContent = step.title;
-      document.getElementById("panelDesc").textContent = step.desc;
-
-      const body = document.getElementById("panelBody");
-      body.innerHTML = "";
-      hideWarn();
-
-      if (step.id === "identity") body.appendChild(renderIdentity());
-      if (step.id === "location") body.appendChild(renderLocation());
-      if (step.id === "brand") body.appendChild(renderBrand());
-      if (step.id === "ops") body.appendChild(renderOps());
-      if (step.id === "review") body.appendChild(renderReview());
-      if (step.id === "anchors") body.appendChild(renderAnchors());
-    }
-
-    function showWarn(msg) {
-      const w = document.getElementById("warnBox");
-      w.style.display = "block";
-      w.textContent = msg;
-    }
-
-    function hideWarn() {
-      const w = document.getElementById("warnBox");
-      w.style.display = "none";
-      w.textContent = "";
-    }
-
-    // ------------------------------
-    // Field builders
-    // ------------------------------
-    function field({ label, required = false, hint = "", contentEl }) {
-      const wrap = document.createElement("div");
-      wrap.className = "field";
-
-      const lr = document.createElement("div");
-      lr.className = "field-label";
-
-      const l = document.createElement("label");
-      l.textContent = label;
-
-      lr.appendChild(l);
-      if (required) {
-        const r = document.createElement("span");
-        r.className = "badge-required";
-        r.textContent = "Required";
-        lr.appendChild(r);
-      }
-
-      wrap.appendChild(lr);
-      wrap.appendChild(contentEl);
-
-      if (hint) {
-        const h = document.createElement("div");
-        h.className = "hint";
-        h.textContent = hint;
-        wrap.appendChild(h);
-      }
-
-      return wrap;
-    }
-
-    function inputText(key, { placeholder = "" } = {}) {
-      const el = document.createElement("input");
-      el.value = state[key] ?? "";
-      el.placeholder = placeholder;
-      el.oninput = () => { state[key] = el.value; persistState(); };
-      return el;
-    }
-
-    function inputNumber(key, { min = null, max = null } = {}) {
-      const el = document.createElement("input");
-      el.type = "number";
-      el.value = state[key];
-      if (min !== null) el.min = String(min);
-      if (max !== null) el.max = String(max);
-      el.oninput = () => {
-        const n = Number(el.value);
-        state[key] = Number.isFinite(n) ? n : 0;
-        persistState();
-      };
-      return el;
-    }
-
-    function inputTextarea(key, { placeholder = "" } = {}) {
-      const el = document.createElement("textarea");
-      el.value = state[key] ?? "";
-      el.placeholder = placeholder;
-      el.oninput = () => { state[key] = el.value; persistState(); };
-      return el;
-    }
-
-    function inputSelect(key, options) {
-      const el = document.createElement("select");
-      options.forEach(o => {
-        const opt = document.createElement("option");
-        if (typeof o === "string") { opt.value = o; opt.textContent = o; }
-        else { opt.value = o.v; opt.textContent = o.t; }
-        el.appendChild(opt);
-      });
-      el.value = state[key];
-      el.onchange = () => { state[key] = el.value; persistState(); renderAll(); };
-      return el;
-    }
-
-    function toggleBool(key) {
-      const el = document.createElement("select");
-      [{ v: "true", t: "Yes" }, { v: "false", t: "No" }].forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o.v; opt.textContent = o.t;
-        el.appendChild(opt);
-      });
-      el.value = String(!!state[key]);
-      el.onchange = () => { state[key] = (el.value === "true"); persistState(); };
-      return el;
-    }
-
-    function chipsMulti(key, choices) {
-      const box = document.createElement("div");
-      box.className = "chips";
-
-      // sanitize state into a unique, valid set
-      const allowed = new Set(choices);
-      const initial = Array.isArray(state[key]) ? state[key] : [];
-      const set = new Set(
-        initial
-          .map(x => String(x).trim())
-          .filter(x => x && allowed.has(x))
-      );
-
-      // write back sanitized state (removes duplicates + invalid values)
-      state[key] = Array.from(set);
-      persistState();
-
-      choices.forEach(c => {
-        const chip = document.createElement("div");
-        chip.className = `chip ${set.has(c) ? "on" : ""}`;
-        chip.textContent = c;
-
-        chip.onclick = () => {
-          if (set.has(c)) set.delete(c);
-          else set.add(c);
-
-          // enforce "Select 1–3" (optional, since your hint says so)
-          if (set.size > 3) {
-            // remove the newly added one (simple rule)
-            set.delete(c);
-            return;
-          }
-
-          state[key] = Array.from(set);
-          persistState();
-          renderAll();
-        };
-
-        box.appendChild(chip);
-      });
-
-      return box;
-    }
-
-    function tagInput(key) {
-      const box = document.createElement("div");
-      box.className = "tag-box";
-
-      const tags = Array.isArray(state[key]) ? state[key] : [];
-
-      function rerender() {
-        box.innerHTML = "";
-        tags.forEach((t, idx) => {
-          const tag = document.createElement("span");
-          tag.className = "tag";
-          tag.innerHTML = `<span>${escapeHtml(t)}</span>`;
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.textContent = "✕";
-          btn.onclick = () => {
-            tags.splice(idx, 1);
-            state[key] = tags;
-            persistState();
-            rerender();
-          };
-          tag.appendChild(btn);
-          box.appendChild(tag);
-        });
-
-        const inp = document.createElement("input");
-        inp.className = "tag-input";
-        inp.placeholder = "Type a competitor and press Enter…";
-        inp.onkeydown = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const val = (inp.value || "").trim();
-            if (!val) return;
-            if (!tags.includes(val)) tags.push(val);
-            state[key] = tags;
-            inp.value = "";
-            persistState();
-            rerender();
-          }
-        };
-        box.appendChild(inp);
-      }
-
-      rerender();
-      return box;
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    // ------------------------------
-    // Step Panels
-    // ------------------------------
-    function renderIdentity() {
-      const g = document.createElement("div");
-      g.className = "form-grid";
-
-      g.appendChild(field({
-        label: "Concept Name",
-        required: true,
-        hint: "Short, memorable, and brandable.",
-        contentEl: inputText("concept_name", { placeholder: "e.g., OMB (Oh My Bun)" })
-      }));
-
-      g.appendChild(field({
-        label: "One-liner",
-        required: true,
-        hint: "One sentence that sells the idea instantly.",
-        contentEl: inputText("one_liner", { placeholder: "e.g., Mess-free pressed brioche burgers with premium sauces." })
-      }));
-
-      g.appendChild(field({
-        label: "Cuisine Type",
-        required: true,
-        hint: "Pick the closest, or choose Other.",
-        contentEl: inputSelect("cuisine_type", OPTIONS.cuisine)
-      }));
-
-      if (state.cuisine_type === "Other") {
-        const other = field({
-          label: "Cuisine (Other)",
-          required: true,
-          hint: "Write your cuisine style in 2–6 words.",
-          contentEl: inputText("cuisine_other", { placeholder: "e.g., Modern Levantine street food" })
-        });
-        other.classList.add("wide");
-        g.appendChild(other);
-      }
-
-      g.appendChild(field({
-        label: "Service Model",
-        required: true,
-        hint: "This drives the plan structure and assumptions.",
-        contentEl: inputSelect("service_model", OPTIONS.service_model)
-      }));
-
-      const diff = field({
-        label: "Differentiator",
-        required: true,
-        hint: "What makes you win vs. nearby options?",
-        contentEl: inputTextarea("differentiator", { placeholder: "e.g., Pressed brioche format, fast kitchen flow, clean ingredients, signature sauces." })
-      });
-      diff.classList.add("wide");
-      g.appendChild(diff);
-
-      return g;
-    }
-
-    function renderLocation() {
-      const g = document.createElement("div");
-      g.className = "form-grid";
-
-      g.appendChild(field({
-        label: "Country",
-        required: true,
-        contentEl: inputText("country", { placeholder: "Lebanon" })
-      }));
-
-      g.appendChild(field({
-        label: "City",
-        required: true,
-        contentEl: inputText("city", { placeholder: "Beirut" })
-      }));
-
-      g.appendChild(field({
-        label: "Neighborhood Type",
-        required: true,
-        contentEl: inputSelect("neighborhood_type", OPTIONS.neighborhood)
-      }));
-
-      g.appendChild(field({
-        label: "Size (sqm)",
-        required: true,
-        hint: "Used for layout assumptions and feasibility checks.",
-        contentEl: inputNumber("size_sqm", { min: 5, max: 1000 })
-      }));
-
-      g.appendChild(field({
-        label: "Seating Capacity",
-        required: true,
-        hint: "If 0, you're basically delivery-only.",
-        contentEl: inputNumber("seating_capacity", { min: 0, max: 400 })
-      }));
-
-      g.appendChild(field({
-        label: "Delivery Enabled?",
-        required: true,
-        contentEl: toggleBool("delivery_flag")
-      }));
-
-      g.appendChild(field({
-        label: "Alcohol Served?",
-        required: true,
-        hint: "If Yes, beverage program may include bar logic later.",
-        contentEl: toggleBool("alcohol_flag")
-      }));
-
-      return g;
-    }
-
-    function renderBrand() {
-      const g = document.createElement("div");
-      g.className = "form-grid";
-
-      const ta = field({
-        label: "Target Audience",
-        required: false,
-        hint: "Select 1–3. Too many makes the concept fuzzy.",
-        contentEl: chipsMulti("target_audience", OPTIONS.target_audience)
-      });
-      ta.classList.add("wide");
-      g.appendChild(ta);
-
-      g.appendChild(field({
-        label: "Price Positioning",
-        required: true,
-        hint: "Controls tone and menu pricing direction.",
-        contentEl: inputSelect("price_positioning", OPTIONS.price)
-      }));
-
-      const comps = field({
-        label: "Competitors (tags)",
-        required: false,
-        hint: "Type a name and hit Enter. Keep it real and local.",
-        contentEl: tagInput("competitors")
-      });
-      comps.classList.add("wide");
-      g.appendChild(comps);
-
-      const edge = field({
-        label: "Competitive Edge (your angle)",
-        required: false,
-        hint: "One paragraph on how you beat competitors (product, speed, vibe, price).",
-        contentEl: inputTextarea("competitive_edge", { placeholder: "e.g., Faster service + better bun format + cleaner brand + consistent quality." })
-      });
-      edge.classList.add("wide");
-      g.appendChild(edge);
-
-      const brand = field({
-        label: "Brand Personality Keywords",
-        required: false,
-        hint: "Pick 2–5.",
-        contentEl: chipsMulti("brand_personality_keywords", OPTIONS.brand_keywords)
-      });
-      brand.classList.add("wide");
-      g.appendChild(brand);
-
-      const interior = field({
-        label: "Interior Mood Keywords",
-        required: false,
-        hint: "Pick 2–5. This shapes the environment section.",
-        contentEl: chipsMulti("interior_mood_keywords", OPTIONS.interior_keywords)
-      });
-      interior.classList.add("wide");
-      g.appendChild(interior);
-
-      return g;
-    }
-
-    function renderOps() {
-      const g = document.createElement("div");
-      g.className = "form-grid";
-
-      const mp = field({
-        label: "Meal Periods",
-        required: true,
-        hint: "Select at least one.",
-        contentEl: chipsMulti("meal_periods", OPTIONS.meal_periods)
-      });
-      mp.classList.add("wide");
-      g.appendChild(mp);
-
-      g.appendChild(field({
-        label: "Beverage Direction",
-        required: true,
-        contentEl: inputSelect("beverage_direction", OPTIONS.beverage_direction)
-      }));
-
-      g.appendChild(field({
-        label: "Operating Hours",
-        required: true,
-        hint: "Simple text is fine. You can refine later.",
-        contentEl: inputText("operating_hours", { placeholder: "e.g., 12:00-23:30" })
-      }));
-
-      const fb = field({
-        label: "Founder Background",
-        required: false,
-        hint: "1–3 sentences. Helps keep the tone grounded and credible.",
-        contentEl: inputTextarea("founder_background", { placeholder: "e.g., Operations-focused founder, strong execution mindset, inspired by X." })
-      });
-      fb.classList.add("wide");
-      g.appendChild(fb);
-
-      g.appendChild(field({
-        label: "Experience Level",
-        required: true,
-        contentEl: inputSelect("experience_level", OPTIONS.experience_level)
-      }));
-
-      g.appendChild(field({
-        label: "Ownership Structure",
-        required: true,
-        contentEl: inputSelect("ownership_structure", OPTIONS.ownership_structure)
-      }));
-
-      g.appendChild(field({
-        label: "Budget Tier",
-        required: true,
-        contentEl: inputSelect("budget_tier", OPTIONS.budget_tier)
-      }));
-
-      return g;
-    }
-
-    function renderReview() {
-      const wrap = document.createElement("div");
-
-      function reviewSection(title, rows) {
-        const sec = document.createElement("div");
-        sec.className = "review-section";
-
-        const heading = document.createElement("div");
-        heading.className = "review-section-title";
-        heading.textContent = title;
-        sec.appendChild(heading);
-
-        const rowsEl = document.createElement("div");
-        rowsEl.className = "review-rows";
-
-        rows.forEach(([key, val]) => {
-          const row = document.createElement("div");
-          row.className = "review-row";
-
-          const k = document.createElement("div");
-          k.className = "review-key";
-          k.textContent = key;
-
-          const v = document.createElement("div");
-          const isEmpty = val === null || val === undefined || val === "" ||
-            (Array.isArray(val) && val.length === 0);
-          v.className = isEmpty ? "review-val empty" : "review-val";
-          v.textContent = isEmpty
-            ? "—"
-            : Array.isArray(val) ? val.join(", ") : String(val);
-
-          row.appendChild(k);
-          row.appendChild(v);
-          rowsEl.appendChild(row);
-        });
-
-        sec.appendChild(rowsEl);
-        return sec;
-      }
-
-      const cuisineDisplay = state.cuisine_type === "Other"
-        ? (state.cuisine_other || "Other")
-        : state.cuisine_type;
-
-      wrap.appendChild(reviewSection("Concept Identity", [
-        ["Concept Name", state.concept_name],
-        ["One-liner", state.one_liner],
-        ["Cuisine", cuisineDisplay],
-        ["Service Model", state.service_model],
-        ["Differentiator", state.differentiator],
-      ]));
-
-      wrap.appendChild(reviewSection("Location & Format", [
-        ["Country / City", [state.country, state.city].filter(Boolean).join(", ")],
-        ["Neighborhood Type", state.neighborhood_type],
-        ["Size (sqm)", state.size_sqm],
-        ["Seating Capacity", state.seating_capacity],
-        ["Delivery Enabled", state.delivery_flag ? "Yes" : "No"],
-        ["Alcohol Served", state.alcohol_flag ? "Yes" : "No"],
-      ]));
-
-      wrap.appendChild(reviewSection("Market & Brand", [
-        ["Target Audience", state.target_audience],
-        ["Price Positioning", state.price_positioning],
-        ["Competitors", state.competitors],
-        ["Competitive Edge", state.competitive_edge],
-        ["Brand Keywords", state.brand_personality_keywords],
-        ["Interior Keywords", state.interior_mood_keywords],
-      ]));
-
-      wrap.appendChild(reviewSection("Operations & Founder", [
-        ["Meal Periods", state.meal_periods],
-        ["Beverage Direction", state.beverage_direction],
-        ["Operating Hours", state.operating_hours],
-        ["Founder Background", state.founder_background],
-        ["Experience Level", state.experience_level],
-        ["Ownership Structure", state.ownership_structure],
-        ["Budget Tier", state.budget_tier],
-      ]));
-
-      wrap.appendChild(reviewSection("Financial Anchors", [
-        ["Daily Orders", state.expected_daily_orders],
-        ["Avg Ticket (USD)", state.avg_ticket_usd],
-        ["Monthly Rent (USD)", state.monthly_rent_usd],
-        ["Setup Budget (USD)", state.capex_budget_usd],
-        ["Staff Model", state.staff_model],
-        ["Channel Mix", `Dine-in ${state.sales_mix_dinein_pct}% / Takeaway ${state.sales_mix_takeaway_pct}% / Delivery ${state.sales_mix_delivery_pct}%`],
-        ["COGS Target %", state.target_cogs_pct],
-        ["Kitchen Type", state.kitchen_type],
-        ["Operating Days/Week", state.operating_days_per_week],
-        ["Alcohol License", state.alcohol_license_status],
-      ]));
-
-      const note = document.createElement("div");
-      note.className = "mini-note";
-      note.textContent = "Generate will start a job with SSE progress and redirect you to the live status page.";
-      wrap.appendChild(note);
-
-      return wrap;
-    }
-
-    // ------------------------------
-    // Validation + navigation
-    // ------------------------------
-    function maxReachableStep() {
-      // You can always go back; forward is gated by validation.
-      // We compute the furthest step you can reach from step 0 by validating sequentially.
-      let furthest = 0;
-      for (let i = 0; i < STEPS.length - 1; i++) {
-        if (validateStep(i).ok) furthest = i + 1;
-        else break;
-      }
-      return furthest;
-    }
-
-    function validateStep(stepIndex) {
-      const stepId = STEPS[stepIndex].id;
-      const errs = [];
-
-      const isBlank = (v) => !v || String(v).trim().length === 0;
-
-      if (stepId === "identity") {
-        if (isBlank(state.concept_name)) errs.push("Concept Name is required.");
-        if (isBlank(state.one_liner)) errs.push("One-liner is required.");
-        if (isBlank(state.cuisine_type)) errs.push("Cuisine Type is required.");
-        if (state.cuisine_type === "Other" && isBlank(state.cuisine_other)) errs.push("Cuisine (Other) is required.");
-        if (isBlank(state.service_model)) errs.push("Service Model is required.");
-        if (isBlank(state.differentiator)) errs.push("Differentiator is required.");
-      }
-
-      if (stepId === "location") {
-        if (isBlank(state.country)) errs.push("Country is required.");
-        if (isBlank(state.city)) errs.push("City is required.");
-        if (isBlank(state.neighborhood_type)) errs.push("Neighborhood Type is required.");
-
-        const size = Number(state.size_sqm);
-        const seats = Number(state.seating_capacity);
-
-        if (!Number.isFinite(size) || size <= 0) errs.push("Size (sqm) must be a positive number.");
-        if (!Number.isFinite(seats) || seats < 0) errs.push("Seating Capacity must be 0 or more.");
-
-        if (seats === 0 && state.delivery_flag !== true) {
-          errs.push("If seating is 0, Delivery should be Yes (or you're a ghost restaurant).");
-        }
-      }
-
-      if (stepId === "brand") {
-        if (isBlank(state.price_positioning)) errs.push("Price Positioning is required.");
-        // soft guidance, not hard fails:
-        const ta = Array.isArray(state.target_audience) ? state.target_audience : [];
-        if (ta.length > 4) errs.push("Target Audience is too broad (pick 1–3 ideally).");
-      }
-
-      if (stepId === "ops") {
-        const mp = Array.isArray(state.meal_periods) ? state.meal_periods : [];
-        if (mp.length === 0) errs.push("Select at least one Meal Period.");
-        if (isBlank(state.beverage_direction)) errs.push("Beverage Direction is required.");
-        if (isBlank(state.operating_hours)) errs.push("Operating Hours is required.");
-        if (isBlank(state.experience_level)) errs.push("Experience Level is required.");
-        if (isBlank(state.ownership_structure)) errs.push("Ownership Structure is required.");
-        if (isBlank(state.budget_tier)) errs.push("Budget Tier is required.");
-      }
-
-      if (stepId === "anchors") {
-        // Optional: channel mix sanity if user_provided
-        if (state.sales_mix__source === "user_provided") {
-          const a = Number(state.sales_mix_dinein_pct || 0);
-          const b = Number(state.sales_mix_takeaway_pct || 0);
-          const c = Number(state.sales_mix_delivery_pct || 0);
-          const total = a + b + c;
-          if (total < 90 || total > 110) errs.push("Sales mix should total ~100% (±10%).");
-        }
-      }
-
-      return { ok: errs.length === 0, errs };
-    }
-
-    function goBack() {
-      hideWarn();
-      if (currentStep === 0) return;
-      currentStep -= 1;
-      renderAll();
-    }
-
-    async function goNext() {
-      hideWarn();
-
-      const step = STEPS[currentStep];
-
-      // Validate current step
-      if (step.id !== "review") {
-        const v = validateStep(currentStep);
-        if (!v.ok) {
-          showWarn(v.errs.join("\n"));
-          return;
-        }
-        currentStep += 1;
-        renderAll();
-        return;
-      }
-
-      // REVIEW step: generate
-      const allOk = [0, 1, 2, 3].every(i => validateStep(i).ok);
-      if (!allOk) {
-        showWarn("Some required fields are missing. Go back and fix the highlighted step(s).");
-        return;
-      }
-
-      persistState();
-      await startJob();
-    }
-
-    function buildIntakePayload() {
-      const payload = { ...state };
-
-      // normalize cuisine other
-      if (payload.cuisine_type === "Other") {
-        payload.cuisine_type = payload.cuisine_other || "Other";
-      }
-      delete payload.cuisine_other;
-
-      // keep arrays clean
-      const ta = Array.isArray(payload.target_audience) ? payload.target_audience : [];
-      payload.target_audience = ta;
-      payload.brand_personality_keywords = Array.isArray(payload.brand_personality_keywords) ? payload.brand_personality_keywords : [];
-      payload.interior_mood_keywords = Array.isArray(payload.interior_mood_keywords) ? payload.interior_mood_keywords : [];
-      payload.meal_periods = Array.isArray(payload.meal_periods) ? payload.meal_periods : [];
-      payload.competitors = Array.isArray(payload.competitors) ? payload.competitors : [];
-
-            // Build confidence map (server stores this)
-      payload.confidence = {
-        expected_daily_orders: state.expected_daily_orders__source,
-        avg_ticket_usd: state.avg_ticket_usd__source,
-        monthly_rent_usd: state.monthly_rent_usd__source,
-        capex_budget_usd: state.capex_budget_usd__source,
-        staff_model: state.staff_model__source,
-        sales_mix: state.sales_mix__source,
-        target_cogs_pct: state.target_cogs_pct__source,
-        kitchen_type: state.kitchen_type__source,
-        operating_days_per_week: state.operating_days_per_week__source,
-        alcohol_license_status: state.alcohol_license_status__source
-      };
-
-      // Remove UI-only source keys from payload
-      Object.keys(payload).forEach(k => {
-        if (k.endsWith("__source")) delete payload[k];
-      });
-
-      return payload;
-    }
-
-    async function startJob() {
-      const btnNext = document.getElementById("btnNext");
-      btnNext.disabled = true;
-      btnNext.textContent = "Starting…";
-
-      const payload = buildIntakePayload();
-      const chunkSize = 6;
-      const maxWorkers = 3;
-
-      try {
-        const res = await fetch(`/api/generate-job?chunk_size=${encodeURIComponent(chunkSize)}&max_workers=${encodeURIComponent(maxWorkers)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          const t = await res.text();
-          throw new Error(t || ("HTTP " + res.status));
-        }
-
-        const data = await res.json();
-        if (!data.job_id) throw new Error("Missing job_id.");
-        window.location.href = `/jobs/${data.job_id}`;
-      } catch (e) {
-        showWarn("Generate failed:\n" + String(e?.message || e));
-        btnNext.disabled = false;
-        btnNext.textContent = "Generate Full Document";
-      }
-    }
-
-    // ------------------------------
-    // Boot
-    // ------------------------------
-    renderAll();
+    render();
   </script>
 </body>
-
 </html>

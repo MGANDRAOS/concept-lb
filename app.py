@@ -265,7 +265,7 @@ def _persist_plan_record(
     return plan_id
 
 
-def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers: int):
+def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers: int, model_name: str = "gpt-5.2"):
     with app.app_context():
         try:
             _job_update(job_id, percent=2, message="Normalizing intake…", log="Normalizing intake…")
@@ -294,7 +294,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                     concept=concept,
                     section_specs=specs_chunk,
                     include_assumptions=include_assumptions,
-                    model_name="gpt-5.2",
+                    model_name=model_name,
                     max_output_tokens=8000 if not include_assumptions else 10000,
                 )
                 return chunk_index, bundle
@@ -431,6 +431,12 @@ def generate_job():
     chunk_size = int(request.args.get("chunk_size", 4))
     max_workers = int(request.args.get("max_workers", 3))
 
+    # Model selection: allow override via query param or payload
+    ALLOWED_MODELS = {"gpt-5.4-2026-03-05", "gpt-5.4-nano-2026-03-17"}
+    model_name = request.args.get("model") or intake.pop("_model", None) or "gpt-5.4-nano-2026-03-17"
+    if model_name not in ALLOWED_MODELS:
+        model_name = "gpt-5.4-nano-2026-03-17"
+
     job_id = uuid.uuid4().hex
 
     with JOBS_LOCK:
@@ -442,11 +448,12 @@ def generate_job():
             "plan": None,
             "error": None,
             "plan_id": None,
+            "model": model_name,
         }
 
     t = threading.Thread(
         target=_run_generation_job,
-        args=(job_id, intake, chunk_size, max_workers),
+        args=(job_id, intake, chunk_size, max_workers, model_name),
         daemon=True,
     )
     t.start()
