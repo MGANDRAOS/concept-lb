@@ -1,0 +1,372 @@
+{# templates/financial_pdf.html — Financial Model PDF #}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ concept_name or "Financial Model" }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page {
+      size: A4 landscape;
+      margin: 18mm 15mm 22mm 15mm;
+    }
+
+    body {
+      background: #fff;
+      color: #1a1a1a;
+      font: 9.5pt/1.5 'Segoe UI', Helvetica, Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .sidebar-brand {
+      position: fixed;
+      right: -10mm;
+      top: 50%;
+      transform: rotate(90deg) translateX(-50%);
+      font-size: 7pt;
+      color: #d0d0d0;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+
+    /* Cover */
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+
+    .cover-accent { width: 60px; height: 4px; background: #2c5282; margin: 0 auto 30px; }
+    .cover h1 { font-family: Georgia, serif; font-size: 28pt; margin-bottom: 10px; }
+    .cover .subtitle { font-size: 13pt; color: #555; margin-bottom: 30px; }
+    .cover .date { font-size: 10pt; color: #888; }
+
+    /* Section breaks */
+    .page-break { page-break-before: always; }
+
+    /* Section headings */
+    h2 {
+      font-family: Georgia, serif;
+      font-size: 14pt;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #2c5282;
+    }
+
+    h3 {
+      font-size: 10pt;
+      color: #2c5282;
+      margin: 14px 0 6px;
+    }
+
+    p { margin: 8px 0; }
+
+    /* Financial tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin: 10px 0;
+    }
+
+    th, td {
+      padding: 5px 6px;
+      border: 1px solid #ddd;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f0f0f0;
+      font-weight: 700;
+      text-align: center;
+      font-size: 8pt;
+    }
+
+    td { text-align: right; }
+    td.label { text-align: left; font-weight: 600; }
+    td.sublabel { text-align: left; padding-left: 16px; }
+    td.pct { color: #666; font-size: 7.5pt; }
+
+    tr.subtotal { background: #f7f7f7; font-weight: 700; }
+    tr.total { background: #e8eef6; font-weight: 700; }
+    tr.divider td { border-top: 2px solid #333; }
+
+    .neg { color: #c53030; }
+
+    /* Methodology text */
+    .methodology {
+      columns: 2;
+      column-gap: 24px;
+      font-size: 9pt;
+      line-height: 1.55;
+    }
+
+    .methodology p { margin-bottom: 8px; }
+
+    /* Intro funding box */
+    .funding-box {
+      border: 1px solid #ddd;
+      padding: 12px 16px;
+      margin: 12px 0;
+      display: inline-block;
+    }
+
+    .funding-box table { border: none; }
+    .funding-box td { border: none; padding: 3px 12px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar-brand">{{ concept_name or "" }}</div>
+
+  <!-- Cover -->
+  <div class="cover">
+    <div class="cover-accent"></div>
+    <h1>{{ concept_name or "Restaurant" }}</h1>
+    <div class="subtitle">Financial Model</div>
+    <div class="date">{{ date or "" }}</div>
+  </div>
+
+  <!-- Introduction -->
+  <div class="page-break">
+    <h2>Introduction</h2>
+    {% if fm.funding %}
+    <p>The financial model is based on {{ "renovation to an existing restaurant space" if fm.meta.service_model != "qsr" else "a quick-service restaurant setup" }}.
+    The Opening Budget for the launch is ${{ "{:,.0f}".format(fm.funding.total) }} which allows for all cosmetic renovations, equipment, inventory and Pre-Opening operational costs.</p>
+    <p>For purposes of this plan, it is assumed that the company will be funded by a combination of owner equity and bank financing as per below.</p>
+    <div class="funding-box">
+      <table>
+        <tr><td class="label">Equity</td><td>$ {{ "{:,.0f}".format(fm.funding.equity) }}</td></tr>
+        <tr><td class="label">Loan</td><td>$ {{ "{:,.0f}".format(fm.funding.loan) }}</td></tr>
+        <tr class="total"><td class="label">Total</td><td>$ {{ "{:,.0f}".format(fm.funding.total) }}</td></tr>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Opening Budget -->
+  {% if fm.opening_budget %}
+  <div class="page-break">
+    <h2>Use of Funds &mdash; Pre-Opening Budget</h2>
+    <table>
+      <thead>
+        <tr><th style="text-align:left;">Category</th><th>Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="label">Building (Leasehold Improvements)</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.building) }}</td></tr>
+        <tr><td class="label">Equipment &amp; Supplies</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.equipment) }}</td></tr>
+        <tr><td class="label">Operating Supplies</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.operating_supplies) }}</td></tr>
+        <tr><td class="label">Pre-Opening Expenses</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.preopening) }}</td></tr>
+        <tr><td class="label">Marketing</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.marketing) }}</td></tr>
+        <tr><td class="label">Working Capital</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.working_capital) }}</td></tr>
+        <tr><td class="label">Miscellaneous / Financing</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.misc_financing) }}</td></tr>
+        <tr class="total"><td class="label">TOTAL</td><td>$ {{ "{:,.0f}".format(fm.opening_budget.total) }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Year 1 Income Statement -->
+  <div class="page-break">
+    <h2>Year 1 Income Statement</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left;">Category</th>
+          {% for p in fm.year1_income.periods %}
+            <th>P{{ p }}</th>
+          {% endfor %}
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label">Weekly Sales</td>
+          {% for ws in fm.year1_income.weekly_sales %}
+            <td>$ {{ "{:,.0f}".format(ws) }}</td>
+          {% endfor %}
+          <td></td>
+        </tr>
+        <tr class="subtotal">
+          <td class="label">REVENUE</td>
+          {% for r in fm.year1_income.revenue %}
+            <td>$ {{ "{:,.0f}".format(r) }}</td>
+          {% endfor %}
+          <td>$ {{ "{:,.0f}".format(fm.year1_income.totals.revenue) }}</td>
+        </tr>
+        <tr>
+          <td class="label">Product Cost</td>
+          {% for c in fm.year1_income.cogs %}
+            <td>$ {{ "{:,.0f}".format(c) }}</td>
+          {% endfor %}
+          <td>$ {{ "{:,.0f}".format(fm.year1_income.totals.cogs) }}</td>
+        </tr>
+        <tr class="subtotal">
+          <td class="label">GROSS MARGIN</td>
+          {% for gm in fm.year1_income.gross_margin %}
+            <td>$ {{ "{:,.0f}".format(gm) }}</td>
+          {% endfor %}
+          <td>$ {{ "{:,.0f}".format(fm.year1_income.totals.gross_margin) }}</td>
+        </tr>
+        <tr>
+          <td class="label">Wages</td>
+          {% for w in fm.year1_income.wages %}
+            <td>$ {{ "{:,.0f}".format(w) }}</td>
+          {% endfor %}
+          <td>$ {{ "{:,.0f}".format(fm.year1_income.totals.wages) }}</td>
+        </tr>
+        <tr>
+          <td class="label">Operating Costs</td>
+          {% for o in fm.year1_income.operating %}
+            <td>$ {{ "{:,.0f}".format(o) }}</td>
+          {% endfor %}
+          <td>$ {{ "{:,.0f}".format(fm.year1_income.totals.operating) }}</td>
+        </tr>
+        <tr>
+          <td class="label">Fixed Costs</td>
+          {% for f in fm.year1_income.fixed %}
+            <td>$ {{ "{:,.0f}".format(f) }}</td>
+          {% endfor %}
+          <td>$ {{ "{:,.0f}".format(fm.year1_income.totals.fixed) }}</td>
+        </tr>
+        <tr class="total divider">
+          <td class="label">EBITDA</td>
+          {% for e in fm.year1_income.ebitda %}
+            <td class="{{ 'neg' if e < 0 else '' }}">$ {{ "{:,.0f}".format(e) }}</td>
+          {% endfor %}
+          <td class="{{ 'neg' if fm.year1_income.totals.ebitda < 0 else '' }}">$ {{ "{:,.0f}".format(fm.year1_income.totals.ebitda) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5-Year Income Statement -->
+  <div class="page-break">
+    <h2>5-Year Income Statement</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left;"></th>
+          {% for y in fm.five_year %}
+            <th colspan="2">Year {{ y.year }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="subtotal">
+          <td class="label">REVENUE</td>
+          {% for y in fm.five_year %}
+            <td>$ {{ "{:,.0f}".format(y.revenue) }}</td><td class="pct">100.0%</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="label">Product Cost</td>
+          {% for y in fm.five_year %}
+            <td>$ {{ "{:,.0f}".format(y.cogs) }}</td><td class="pct">{{ y.cogs_pct }}%</td>
+          {% endfor %}
+        </tr>
+        <tr class="subtotal">
+          <td class="label">GROSS MARGIN</td>
+          {% for y in fm.five_year %}
+            <td>$ {{ "{:,.0f}".format(y.gross_margin) }}</td><td class="pct">{{ "%.1f"|format(100 - y.cogs_pct) }}%</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="label">Wages</td>
+          {% for y in fm.five_year %}
+            <td>$ {{ "{:,.0f}".format(y.wages) }}</td><td class="pct">{{ y.wages_pct }}%</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="label">Operating Costs</td>
+          {% for y in fm.five_year %}
+            <td>$ {{ "{:,.0f}".format(y.operating) }}</td><td class="pct"></td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="label">Fixed Costs</td>
+          {% for y in fm.five_year %}
+            <td>$ {{ "{:,.0f}".format(y.fixed) }}</td><td class="pct"></td>
+          {% endfor %}
+        </tr>
+        <tr class="total divider">
+          <td class="label">NET PROFIT</td>
+          {% for y in fm.five_year %}
+            <td class="{{ 'neg' if y.net_profit < 0 else '' }}">$ {{ "{:,.0f}".format(y.net_profit) }}</td>
+            <td class="pct {{ 'neg' if y.net_profit_pct < 0 else '' }}">{{ y.net_profit_pct }}%</td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Balance Sheet -->
+  <div class="page-break">
+    <h2>Balance Sheet</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left;"></th>
+          {% for bs in fm.balance_sheets %}
+            <th>{{ bs.label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="label" colspan="{{ fm.balance_sheets|length + 1 }}" style="background:#e8eef6;">ASSETS</td></tr>
+        <tr>
+          <td class="sublabel">Cash</td>
+          {% for bs in fm.balance_sheets %}
+            <td>$ {{ "{:,.0f}".format(bs.cash) }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="sublabel">Inventory</td>
+          {% for bs in fm.balance_sheets %}
+            <td>$ {{ "{:,.0f}".format(bs.inventory) }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="sublabel">Capital Assets (net)</td>
+          {% for bs in fm.balance_sheets %}
+            <td>$ {{ "{:,.0f}".format(bs.capital_assets) }}</td>
+          {% endfor %}
+        </tr>
+        <tr class="subtotal">
+          <td class="label">TOTAL ASSETS</td>
+          {% for bs in fm.balance_sheets %}
+            <td>$ {{ "{:,.0f}".format(bs.total_assets) }}</td>
+          {% endfor %}
+        </tr>
+        <tr><td class="label" colspan="{{ fm.balance_sheets|length + 1 }}" style="background:#e8eef6;">LIABILITIES &amp; EQUITY</td></tr>
+        <tr>
+          <td class="sublabel">Bank Loan</td>
+          {% for bs in fm.balance_sheets %}
+            <td>$ {{ "{:,.0f}".format(bs.loan) }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="sublabel">Shareholder Equity</td>
+          {% for bs in fm.balance_sheets %}
+            <td>$ {{ "{:,.0f}".format(bs.equity) }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="sublabel">Retained Earnings</td>
+          {% for bs in fm.balance_sheets %}
+            <td class="{{ 'neg' if bs.retained_earnings < 0 else '' }}">$ {{ "{:,.0f}".format(bs.retained_earnings) }}</td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>
