@@ -7,16 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #09090b; --bg2: #18181b; --surface: #27272a;
-      --border: #3f3f46; --border2: #52525b;
-      --text: #fafafa; --text2: #d4d4d8; --subtle: #a1a1aa; --dim: #71717a;
-      --accent: #818cf8; --accent2: #6366f1; --accent-glow: rgba(129,140,248,.15);
-      --green: #34d399; --green-bg: rgba(52,211,153,.1);
-      --red: #f87171; --red-bg: rgba(248,113,113,.08);
-      --card: rgba(24,24,27,.8); --input: rgba(39,39,42,.6);
-      --radius: 12px; --transition: .2s cubic-bezier(.4,0,.2,1);
-    }
-    :root.light {
       --bg: #fafafa; --bg2: #f4f4f5; --surface: #e4e4e7;
       --border: #d4d4d8; --border2: #a1a1aa;
       --text: #09090b; --text2: #27272a; --subtle: #71717a; --dim: #a1a1aa;
@@ -24,12 +14,12 @@
       --green: #059669; --green-bg: rgba(5,150,105,.06);
       --red: #dc2626; --red-bg: rgba(220,38,38,.05);
       --card: rgba(255,255,255,.9); --input: #ffffff;
+      --radius: 12px; --transition: .2s cubic-bezier(.4,0,.2,1);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-    .chrome { position: fixed; top: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9,9,11,.7); border-bottom: 1px solid var(--border); }
-    :root.light .chrome { background: rgba(250,250,250,.85); }
+    .chrome { position: fixed; top: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(250,250,250,.88); border-bottom: 1px solid var(--border); }
     .chrome-inner { max-width: 880px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
     .chrome-brand { display: flex; align-items: center; gap: 10px; }
     .chrome-logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
@@ -97,8 +87,7 @@
 
     .warn { padding: 14px 18px; border-radius: var(--radius); background: var(--red-bg); border: 1px solid rgba(248,113,113,.2); color: var(--text); font-size: 14px; line-height: 1.5; white-space: pre-wrap; display: none; margin-top: 16px; }
 
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9,9,11,.8); border-top: 1px solid var(--border); }
-    :root.light .bottom-nav { background: rgba(250,250,250,.9); }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(250,250,250,.92); border-top: 1px solid var(--border); }
     .bottom-nav-inner { max-width: 680px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
     .nav-steps { display: flex; gap: 4px; align-items: center; }
     .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: var(--transition); cursor: pointer; }
@@ -117,7 +106,6 @@
     .animate-in { animation: fadeInUp .35s cubic-bezier(.4,0,.2,1) both; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
-  <script>(function(){if(localStorage.getItem('conceptlb_theme')==='light')document.documentElement.classList.add('light');})()</script>
 </head>
 <body>
   <div class="chrome"><div class="chrome-inner">
@@ -125,7 +113,6 @@
     <div class="chrome-actions">
       <button class="chrome-btn" onclick="window.location.href='/plans'">My Plans</button>
       <button class="chrome-btn" onclick="resetWizard()">Reset</button>
-      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </div>
   </div></div>
   <div class="progress-track"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
@@ -139,8 +126,6 @@
   </div></div>
 
   <script>
-    function toggleTheme(){const l=document.documentElement.classList.toggle('light');localStorage.setItem('conceptlb_theme',l?'light':'dark');document.getElementById('themeBtn').textContent=l?'☀️':'🌙';}
-    if(localStorage.getItem('conceptlb_theme')==='light')document.getElementById('themeBtn').textContent='☀️';
 
     const STORAGE_KEY="conceptlb_intake_v1";
     const DEFAULTS={concept_name:"",one_liner:"",cuisine_type:"Modern Mediterranean",cuisine_other:"",service_model:"Dine-in",differentiator:"",country:"Lebanon",city:"Beirut",neighborhood_type:"street",size_sqm:35,seating_capacity:18,delivery_flag:true,alcohol_flag:false,target_audience:["Young professionals","Foodies"],price_positioning:"mid",competitors:[],competitive_edge:"",brand_personality_keywords:["bold","minimal"],interior_mood_keywords:["clean","modern"],meal_periods:["lunch","dinner"],beverage_direction:"coffee_focus",operating_hours:"12:00-23:30",founder_background:"",experience_level:"first_time_founder",ownership_structure:"solo",budget_tier:"mid",expected_daily_orders:null,avg_ticket_usd:null,monthly_rent_usd:null,capex_budget_usd:null,staff_model:"lean",sales_mix_dinein_pct:40,sales_mix_takeaway_pct:40,sales_mix_delivery_pct:20,target_cogs_pct:null,kitchen_type:"full_line",operating_days_per_week:6,alcohol_license_status:"not_allowed",opening_budget_usd:null,funding_equity_pct:50,funding_loan_pct:50,avg_check_morning:null,avg_check_daytime:null,avg_check_evening:null,revenue_growth_pct:3,ramp_up_months:4,ramp_start_pct:60,expected_daily_orders__source:"user_unknown",avg_ticket_usd__source:"user_unknown",monthly_rent_usd__source:"user_unknown",capex_budget_usd__source:"user_unknown",staff_model__source:"user_unknown",sales_mix__source:"user_unknown",target_cogs_pct__source:"user_unknown",kitchen_type__source:"user_unknown",operating_days_per_week__source:"user_unknown",alcohol_license_status__source:"user_unknown",opening_budget_usd__source:"user_unknown",_model:"gpt-5.4-nano-2026-03-17"};

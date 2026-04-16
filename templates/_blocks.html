@@ -1,4 +1,4 @@
-{# templates/_blocks.html #}
+{# templates/_blocks.html — Light-theme block rendering for plan preview #}
 {% macro render_block(block) %}
   {% set t = block.get("type") %}
 
@@ -21,16 +21,10 @@
     </div>
 
   {% elif t == "image" %}
-    <figure style="margin: 16px 0; text-align: center;">
-      <img 
-        src="{{ block.get('url', '') }}" 
-        alt="{{ block.get('alt_text', 'Concept image') }}"
-        style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);"
-      />
+    <figure>
+      <img src="{{ block.get('url', '') }}" alt="{{ block.get('alt_text', 'Concept image') }}" />
       {% if block.get("caption") %}
-        <figcaption style="margin-top: 8px; font-size: 13px; color: #a9b4c3; font-style: italic;">
-          {{ block.get("caption") }}
-        </figcaption>
+        <figcaption>{{ block.get("caption") }}</figcaption>
       {% endif %}
     </figure>
 
@@ -58,18 +52,20 @@
       </table>
     </div>
 
-  {% elif block.get("type") == "menu_items" %}
-  <div class="menu-category">
-    {% if block.get("category") %}
-      <h3 style="text-transform:uppercase; font-size:14px; letter-spacing:1px; margin:16px 0 10px; color:var(--accent);">{{ block.get("category") }}</h3>
-    {% endif %}
-    {% for item in block.get("items", []) %}
-      <div style="margin:8px 0;">
-        <strong style="text-transform:uppercase;">{{ item.get("name", "") }}</strong><br>
-        <span style="color:var(--muted); font-size:13px;">{{ item.get("description", "") }}</span>
+  {% elif t == "menu_items" %}
+    <div class="menu-category">
+      {% if block.get("category") %}
+        <h3>{{ block.get("category") }}</h3>
+      {% endif %}
+      <div class="menu-grid">
+        {% for item in block.get("items", []) %}
+          <div class="menu-item">
+            <span class="menu-item-name">{{ item.get("name", "") }}</span>
+            <span class="menu-item-desc">{{ item.get("description", "") }}</span>
+          </div>
+        {% endfor %}
       </div>
-    {% endfor %}
-  </div>
+    </div>
 
   {% else %}
     <pre class="unknown">{{ block }}</pre>

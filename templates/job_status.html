@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Generating… — Concept LB</title>
   <link rel="stylesheet" href="/admin.css" />
-  <script>
-    (function() {
-      if (localStorage.getItem('conceptlb_theme') === 'light') document.documentElement.classList.add('light');
-    })();
-  </script>
 </head>
 <body>
   <div class="wrap" style="max-width:720px;">
@@ -21,7 +16,6 @@
           <div class="sub">This usually takes 2–4 minutes</div>
         </div>
       </div>
-      <button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
     </div>
 
     <div class="card">
@@ -52,15 +46,6 @@
   </div>
 
   <script>
-    function toggleTheme() {
-      const html = document.documentElement;
-      const isLight = html.classList.toggle('light');
-      localStorage.setItem('conceptlb_theme', isLight ? 'light' : 'dark');
-      document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
-    }
-    if (localStorage.getItem('conceptlb_theme') === 'light') {
-      document.getElementById('themeBtn').textContent = '☀️';
-    }
 
     const jobId = "{{ job_id }}";
     const fill = document.getElementById("fill");

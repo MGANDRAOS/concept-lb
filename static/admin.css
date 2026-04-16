@@ -1,39 +1,9 @@
 /* ================================================================
    admin.css — Shared stylesheet for all Concept LB admin pages
-   Supports dark (default) and light theme via .light class on <html>
+   Light theme only
    ================================================================ */
 
-/* ── Theme: Dark (default) ─────────────────────────────────────── */
 :root {
-  --bg:       #070A10;
-  --bg2:      #0E1422;
-  --panel:    #111823;
-  --panel2:   #0f1520;
-  --surface:  rgba(255, 255, 255, 0.03);
-  --stroke:   rgba(255, 255, 255, 0.10);
-  --stroke2:  rgba(255, 255, 255, 0.16);
-  --input-bg: rgba(9, 12, 22, 0.55);
-  --text:     #EAF1FF;
-  --text2:    #D0D9EC;
-  --label:    #C0CAE0;
-  --muted:    #8B99B8;
-  --muted2:   #6B7A9A;
-  --brand:    #7AA2FF;
-  --brand2:   #4E7DFF;
-  --brand-bg: rgba(122, 162, 255, 0.10);
-  --brand-border: rgba(122, 162, 255, 0.25);
-  --ok:       #4ADE80;
-  --ok-bg:    rgba(74, 222, 128, 0.08);
-  --warn:     #FBBF24;
-  --bad:      #FF6B6B;
-  --bad-bg:   rgba(255, 107, 107, 0.08);
-  --shadow:   0 12px 30px rgba(0, 0, 0, 0.45);
-  --shadow2:  0 4px 12px rgba(0, 0, 0, 0.30);
-  --focus:    0 0 0 3px rgba(122, 162, 255, 0.25);
-}
-
-/* ── Theme: Light ──────────────────────────────────────────────── */
-:root.light {
   --bg:       #F5F7FA;
   --bg2:      #EBEEF4;
   --panel:    #FFFFFF;
@@ -47,10 +17,10 @@
   --label:    #3D4A65;
   --muted:    #6B7A9A;
   --muted2:   #8B99B8;
-  --brand:    #3B6FE0;
-  --brand2:   #2B55C0;
-  --brand-bg: rgba(59, 111, 224, 0.08);
-  --brand-border: rgba(59, 111, 224, 0.20);
+  --brand:    #6366F1;
+  --brand2:   #4F46E5;
+  --brand-bg: rgba(99, 102, 241, 0.08);
+  --brand-border: rgba(99, 102, 241, 0.20);
   --ok:       #16A34A;
   --ok-bg:    rgba(22, 163, 74, 0.06);
   --warn:     #D97706;
@@ -58,7 +28,7 @@
   --bad-bg:   rgba(220, 38, 38, 0.06);
   --shadow:   0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow2:  0 2px 8px rgba(0, 0, 0, 0.06);
-  --focus:    0 0 0 3px rgba(59, 111, 224, 0.20);
+  --focus:    0 0 0 3px rgba(99, 102, 241, 0.20);
 }
 
 /* ── Reset & Base ──────────────────────────────────────────────── */
@@ -126,28 +96,6 @@ body {
   align-items: center;
 }
 
-/* ── Theme Toggle ──────────────────────────────────────────────── */
-.theme-toggle {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid var(--stroke);
-  background: var(--surface);
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: all 0.15s ease;
-  padding: 0;
-}
-
-.theme-toggle:hover {
-  border-color: var(--stroke2);
-  color: var(--text);
-  transform: translateY(-1px);
-}
 
 /* ── Cards ─────────────────────────────────────────────────────── */
 .card {
@@ -723,6 +671,3 @@ input::placeholder, textarea::placeholder {
 .gap-12 { gap: 12px; }
 .gap-16 { gap: 16px; }
 
-/* ── Theme toggle script helper ────────────────────────────────── */
-/* Prevent flash of wrong theme on load */
-html.light body { background: var(--bg); color: var(--text); }
