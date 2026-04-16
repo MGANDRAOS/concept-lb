@@ -366,14 +366,138 @@ def generate_financial_model(concept: Dict, derived_financials: Optional[Dict] =
         for cat in rev_split
     }
 
+    # ── 15. Detailed budget sub-items (for methodology pages) ──
+    size_sqm = concept.get("size_sqm", 100)
+    budget_detail = None
+    if budget_breakdown:
+        bld = budget_breakdown.get("building", 0)
+        eqp = budget_breakdown.get("equipment", 0)
+        ops = budget_breakdown.get("operating_supplies", 0)
+        pre = budget_breakdown.get("preopening", 0)
+        mkt = budget_breakdown.get("marketing", 0)
+        wc = budget_breakdown.get("working_capital", 0)
+        misc = budget_breakdown.get("misc_financing", 0)
+
+        budget_detail = {
+            "building": [
+                {"item": "Interior Build Out", "amount": round(bld * 0.85), "note": f"Budgeted at ~${round(bld * 0.85 / max(size_sqm, 1))}/sqm for the space"},
+                {"item": "Hood / Venting", "amount": round(bld * 0.05), "note": "Allowance for ventilation system"},
+                {"item": "Design & Engineering Fees", "amount": round(bld * 0.10), "note": "Professional design and engineering"},
+            ],
+            "equipment": [
+                {"item": "Kitchen Equipment", "amount": round(eqp * 0.55), "note": "All required kitchen equipment as per listing"},
+                {"item": "Bar Equipment", "amount": round(eqp * 0.12) if has_alcohol else 0, "note": "Bar equipment and tools"},
+                {"item": "Chairs / Tables", "amount": round(eqp * 0.10), "note": "Dining furniture"},
+                {"item": "Detail Furnishings", "amount": round(eqp * 0.04), "note": "Miscellaneous wall finishes and accents"},
+                {"item": "Audio-Visual", "amount": round(eqp * 0.03), "note": "Sound system within the space"},
+                {"item": "Point-of-Sale System", "amount": round(eqp * 0.05), "note": "POS hardware and initial setup"},
+                {"item": "Signage", "amount": round(eqp * 0.05), "note": "Exterior and interior signage"},
+                {"item": "Office Equipment", "amount": round(eqp * 0.03), "note": "Office furniture, computer, printer"},
+                {"item": "Security System", "amount": round(eqp * 0.015), "note": "Security cameras and alarm"},
+                {"item": "Telephone System", "amount": round(eqp * 0.015), "note": "Phone and internet setup"},
+            ],
+            "operating_supplies": [
+                {"item": "Smallwares / Glasswares / Kitchen Supplies", "amount": round(ops * 0.65), "note": "Initial kitchen supplies"},
+                {"item": "Paper Products", "amount": round(ops * 0.15), "note": "Initial takeout packaging and paper supplies"},
+                {"item": "Linen / Kitchen Uniform", "amount": round(ops * 0.05), "note": "Kitchen rags and uniforms"},
+                {"item": "Menus / Menu Boards", "amount": round(ops * 0.08), "note": "Menu printing and signage"},
+                {"item": "Office Supplies", "amount": round(ops * 0.04), "note": "General office supplies"},
+                {"item": "Misc FOH / BOH", "amount": round(ops * 0.03), "note": "Miscellaneous front and back of house"},
+            ],
+            "preopening": [
+                {"item": "Management Pre-Opening Labour", "amount": round(pre * 0.55), "note": "Management training period (4-8 weeks)"},
+                {"item": "FOH Training Labour", "amount": round(pre * 0.18), "note": "Front of house staff training"},
+                {"item": "BOH Training Labour", "amount": round(pre * 0.14), "note": "Back of house staff training"},
+                {"item": "Training Food & Materials", "amount": round(pre * 0.06), "note": "Menu development and training supplies"},
+                {"item": "Renovation Operational Costs", "amount": round(pre * 0.04), "note": "Costs during renovation period"},
+                {"item": "Recruitment Advertising", "amount": round(pre * 0.03), "note": "Job postings and hiring costs"},
+            ],
+            "marketing": [
+                {"item": "Media / PR Advertising", "amount": round(mkt * 0.45), "note": "Pre-opening marketing and social media"},
+                {"item": "Website", "amount": round(mkt * 0.40), "note": "Website design and development"},
+                {"item": "Brand Development", "amount": round(mkt * 0.15), "note": "Logo, brand standards, visual identity"},
+            ],
+            "working_capital": [
+                {"item": "Inventory - Food", "amount": round(wc * 0.40), "note": "Initial food product inventory"},
+                {"item": "Inventory - Beverage", "amount": round(wc * 0.30) if has_alcohol else round(wc * 0.15), "note": "Initial beverage inventory"},
+                {"item": "Cash on Hand / Floats", "amount": round(wc * 0.30) if has_alcohol else round(wc * 0.55), "note": "Operating cash and register floats"},
+            ],
+            "misc_financing": [
+                {"item": "Licensing Fees", "amount": round(misc * 0.20), "note": "Business and food service licenses"},
+                {"item": "Legal Costs", "amount": round(misc * 0.35), "note": "Incorporation, lease review, trademarks"},
+                {"item": "Rent Deposit", "amount": round(misc * 0.35), "note": "Security deposit on lease"},
+                {"item": "Utilities / Phone Deposit", "amount": round(misc * 0.10), "note": "Utility account setup deposits"},
+            ],
+        }
+
+    # ── 16. Operating cost detail breakdown ──────────────────
+    operating_cost_detail = [
+        {"item": "Smallwares / Glasswares", "pct": 0.5, "note": "Normal replacement amounts"},
+        {"item": "Paper Products", "pct": 0.3, "note": "Normal replacement amounts"},
+        {"item": "Credit Card Commissions", "pct": 1.8, "note": "Based on 60% credit card payment split"},
+        {"item": "Linen / Kitchen Uniform", "pct": 0.2, "note": "Ongoing replacement"},
+        {"item": "Cleaning / Dishwasher", "pct": 0.4, "note": "Chemical and cleaning supplies"},
+        {"item": "Marketing", "pct": 1.5, "note": "Ongoing marketing initiatives"},
+        {"item": "Telephone", "pct": None, "fixed": 200, "note": "2 lines and cellphone"},
+        {"item": "Repairs & Maintenance", "pct": 0.5, "note": "Year 1 (increases to 1.0% in Year 2+ as warranties expire)"},
+        {"item": "Office / POS Supplies", "pct": 0.2, "note": "Normal operating amounts"},
+        {"item": "Waste Removal", "pct": None, "fixed": 300, "note": "3rd party waste removal services"},
+        {"item": "QSAs (Quality/Service giveaways)", "pct": 0.4, "note": "Budgeted at 0.4% of sales"},
+        {"item": "Equipment Rental", "pct": None, "fixed": 500, "note": "Dishwasher rental, POS subscriptions"},
+    ]
+
+    # ── 17. Wages detail ─────────────────────────────────────
+    wages_detail = {
+        "mgmt_salary": mgmt_salary,
+        "mgmt_positions": [],
+        "foh_labor_pct": foh_labor_pct * 100,
+        "boh_labor_pct": boh_labor_pct * 100,
+        "benefits_pct": benefits_pct * 100,
+    }
+    if staff_model == "lean":
+        wages_detail["mgmt_positions"] = [{"title": "General Manager", "salary": mgmt_salary}]
+    elif staff_model == "standard":
+        wages_detail["mgmt_positions"] = [
+            {"title": "General Manager", "salary": round(mgmt_salary * 0.5)},
+            {"title": "Kitchen Manager", "salary": round(mgmt_salary * 0.5)},
+        ]
+    elif staff_model == "full":
+        wages_detail["mgmt_positions"] = [
+            {"title": "General Manager", "salary": round(mgmt_salary * 0.33)},
+            {"title": "Kitchen Manager", "salary": round(mgmt_salary * 0.33)},
+            {"title": "Bar Manager / Supervisor", "salary": round(mgmt_salary * 0.34)},
+        ]
+
+    # ── 18. Weekly sales table (covers × check by day and period) ──
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekly_sales_table = {
+        "day_names": day_names,
+        "covers_by_period": {},
+        "sales_by_period": {},
+        "total_covers_by_day": weekly_covers_by_day,
+        "total_sales_by_day": [],
+    }
+    total_sales_by_day = [0] * 7
+    for period in active_periods:
+        covers = covers_by_period.get(period, [0]*7)
+        sales = sales_by_period.get(period, [0]*7)
+        weekly_sales_table["covers_by_period"][period] = covers
+        weekly_sales_table["sales_by_period"][period] = sales
+        for d in range(7):
+            total_sales_by_day[d] += sales[d] if d < len(sales) else 0
+    weekly_sales_table["total_sales_by_day"] = total_sales_by_day
+    weekly_sales_table["total_weekly_sales"] = sum(total_sales_by_day)
+
     return {
         "opening_budget": budget_breakdown,
+        "budget_detail": budget_detail,
         "funding": funding,
         "avg_check": avg_check,
         "weekly_covers_by_day": weekly_covers_by_day,
         "covers_by_period": covers_by_period,
         "sales_by_period": sales_by_period,
         "weekly_sales_total": weekly_sales_total,
+        "weekly_sales_table": weekly_sales_table,
         "revenue_split": rev_split,
         "revenue_by_category_y1": rev_by_category_y1,
         "cogs_by_category_y1": cogs_by_category_y1,
@@ -384,6 +508,8 @@ def generate_financial_model(concept: Dict, derived_financials: Optional[Dict] =
         "balance_sheets": balance_sheets,
         "mgmt_salary": mgmt_salary,
         "annual_depreciation": annual_depreciation,
+        "operating_cost_detail": operating_cost_detail,
+        "wages_detail": wages_detail,
         "meta": {
             "service_model": service_model,
             "has_alcohol": has_alcohol,
@@ -393,5 +519,9 @@ def generate_financial_model(concept: Dict, derived_financials: Optional[Dict] =
             "meal_periods": meal_periods,
             "revenue_growth_pct": growth_pct * 100,
             "ramp_months": ramp_months,
+            "ramp_start_pct": ramp_start * 100,
+            "size_sqm": size_sqm,
+            "monthly_rent": monthly_rent,
+            "seating_capacity": concept.get("seating_capacity", 0),
         }
     }
