@@ -366,6 +366,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 "disclaimer": disclaimer,
                 "risk_report": concept.get("risk_report"),
                 "derived_financials": concept.get("derived_financials"),
+                "token_usage": {**tracker.summary(), **tracker.cost(model_name)},
             }
 
             try:

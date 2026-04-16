@@ -47,6 +47,31 @@
     </div>
     {% endif %}
 
+    {% set tu = (plan.plan or {}).get('token_usage') %}
+    {% if tu %}
+    <div class="card" style="margin-bottom:16px; padding:16px 20px;">
+      <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:var(--brand, #818cf8);">Token Usage & Cost</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; font-size:14px;">
+        <div>
+          <div style="color:var(--muted, #71717a); font-size:12px;">Input</div>
+          <div style="font-weight:700;">{{ "{:,}".format(tu.get('input_tokens', 0)) }} tokens</div>
+          <div style="color:var(--muted, #71717a); font-size:13px;">${{ "%.4f"|format(tu.get('input_cost_usd', 0)) }}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted, #71717a); font-size:12px;">Output</div>
+          <div style="font-weight:700;">{{ "{:,}".format(tu.get('output_tokens', 0)) }} tokens</div>
+          <div style="color:var(--muted, #71717a); font-size:13px;">${{ "%.4f"|format(tu.get('output_cost_usd', 0)) }}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted, #71717a); font-size:12px;">Total</div>
+          <div style="font-weight:700;">{{ "{:,}".format(tu.get('total_tokens', 0)) }} tokens</div>
+          <div style="font-weight:700; color:var(--brand, #818cf8);">${{ "%.4f"|format(tu.get('total_cost_usd', 0)) }}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:12px; color:var(--muted, #71717a);">{{ tu.get('api_calls', 0) }} API calls &bull; Model: {{ tu.get('model', '?') }}</div>
+    </div>
+    {% endif %}
+
     <div class="tabs">
       <div class="tab active" data-tab="html">HTML Preview</div>
       <div class="tab" data-tab="planjson">Plan JSON</div>
