@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict
 
 
-BlockType = Literal["paragraph", "bullets", "table", "callout", "image"]
+BlockType = Literal["paragraph", "bullets", "table", "callout", "image", "menu_items"]
 
 
 class ParagraphBlock(BaseModel):
@@ -34,7 +34,17 @@ class ImageBlock(BaseModel):
     alt_text: str
 
 
-Block = Union[ParagraphBlock, BulletsBlock, TableBlock, CalloutBlock, ImageBlock]
+class MenuItem(BaseModel):
+    name: str
+    description: str
+
+class MenuItemsBlock(BaseModel):
+    type: Literal["menu_items"]
+    category: str
+    items: List[MenuItem]
+
+
+Block = Union[ParagraphBlock, BulletsBlock, TableBlock, CalloutBlock, ImageBlock, MenuItemsBlock]
 
 
 class Section(BaseModel):

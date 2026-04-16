@@ -1,0 +1,73 @@
+{# templates/_blocks_pdf.html — print-optimized block rendering #}
+{% macro render_block(block) %}
+
+{% if block.get("type") == "paragraph" %}
+  <p>{{ block.get("text", "") }}</p>
+
+{% elif block.get("type") == "bullets" %}
+  <ul>
+    {% for item in block.get("items", []) %}
+      <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
+
+{% elif block.get("type") == "callout" %}
+  <div class="callout">
+    {% if block.get("title") %}
+      <div class="callout-title">{{ block.get("title") }}</div>
+    {% endif %}
+    <div>{{ block.get("text", "") }}</div>
+  </div>
+
+{% elif block.get("type") == "image" %}
+  <figure class="plan-image">
+    <img src="{{ block.get('url', block.get('src', '')) }}" alt="{{ block.get('alt_text', block.get('alt', '')) }}" />
+    {% if block.get("caption") %}
+      <figcaption>{{ block.get("caption") }}</figcaption>
+    {% endif %}
+  </figure>
+
+{% elif block.get("type") == "table" %}
+  <div class="table-wrap">
+    <table>
+      {% if block.get("columns") %}
+      <thead>
+        <tr>
+          {% for col in block.get("columns", []) %}
+            <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      {% endif %}
+      <tbody>
+        {% for row in block.get("rows", []) %}
+          <tr class="{{ 'alt-row' if loop.index is odd else '' }}">
+            {% for cell in row %}
+              <td>{{ cell }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% elif block.get("type") == "menu_items" %}
+  <div class="menu-category">
+    {% if block.get("category") %}
+      <h3 class="menu-category-title">{{ block.get("category") }}</h3>
+    {% endif %}
+    <div class="menu-items-grid">
+      {% for item in block.get("items", []) %}
+        <div class="menu-item">
+          <span class="dish-name">{{ item.get("name", "") }}</span>
+          <span class="dish-desc">{{ item.get("description", "") }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+{% else %}
+  <pre class="unknown">{{ block }}</pre>
+{% endif %}
+
+{% endmacro %}

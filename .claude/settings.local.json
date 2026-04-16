@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ':*)",
+      "Bash(pkill -f \"python.*app\")",
+      "Bash(python -c \"from app import app; app.run\\(debug=False, port=5000\\)\")",
+      "Bash(curl -s -o /c/Users/User/Downloads/ConceptLB_Olive_Thyme_FinancialModel_v2.pdf http://localhost:5000/plans/79f317f704b24297969945551e29ef0c/export/financial-pdf -w 'HTTP %{http_code}, Size: %{size_download} bytes')",
+      "Bash(curl -s -o /c/Users/User/Downloads/ConceptLB_Olive_Thyme_BusinessPlan_v2.pdf http://localhost:5000/plans/79f317f704b24297969945551e29ef0c/export/pdf -w 'HTTP %{http_code}, Size: %{size_download} bytes')"
+    ]
+  }
+}

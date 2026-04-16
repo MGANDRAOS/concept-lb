@@ -42,6 +42,23 @@ def db_conn():
     return connect(DB_PATH)
 
 
+class _DotDict(dict):
+    """Wrap a dict for Jinja2 — supports both dot-notation and dict access (.get, [key])."""
+    def __init__(self, d):
+        super().__init__(d or {})
+        for k, v in (d or {}).items():
+            if isinstance(v, dict):
+                self[k] = _DotDict(v)
+            elif isinstance(v, list):
+                self[k] = [_DotDict(i) if isinstance(i, dict) else i for i in v]
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return None
+
+
 # --- Jobs memory store (existing) ---
 JOBS: Dict[str, Dict[str, Any]] = {}
 JOBS_LOCK = threading.Lock()
@@ -101,7 +118,7 @@ def generate_html():
     included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
     included_specs.sort(key=lambda s: s.get("order", 0))
 
-    chunk_size = int(request.args.get("chunk_size", 6))
+    chunk_size = int(request.args.get("chunk_size", 4))
     chunks = list(_chunk_list(included_specs, chunk_size))
     total_chunks = max(1, len(chunks))
 
@@ -113,7 +130,7 @@ def generate_html():
             section_specs=specs_chunk,
             include_assumptions=include_assumptions,
             model_name="gpt-5.2",
-            max_output_tokens=3200 if not include_assumptions else 4200,
+            max_output_tokens=8000 if not include_assumptions else 10000,
             generate_images=True,
         )
         return chunk_index, bundle
@@ -248,9 +265,12 @@ def _persist_plan_record(
     return plan_id
 
 
-def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers: int):
+def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers: int, model_name: str = "gpt-5.2"):
     with app.app_context():
         try:
+            from orchestration.openai_client import start_tracking
+            tracker = start_tracking()
+
             _job_update(job_id, percent=2, message="Normalizing intake…", log="Normalizing intake…")
             normalized = normalize_intake(intake)
             concept = normalized["concept"]
@@ -277,8 +297,8 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                     concept=concept,
                     section_specs=specs_chunk,
                     include_assumptions=include_assumptions,
-                    model_name="gpt-5.2",
-                    max_output_tokens=3200 if not include_assumptions else 4200,
+                    model_name=model_name,
+                    max_output_tokens=8000 if not include_assumptions else 10000,
                 )
                 return chunk_index, bundle
 
@@ -346,9 +366,21 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 "disclaimer": disclaimer,
                 "risk_report": concept.get("risk_report"),
                 "derived_financials": concept.get("derived_financials"),
+                "token_usage": {**tracker.summary(), **tracker.cost(model_name)},
             }
 
-            validated = FinalPlan.model_validate(final_plan).model_dump()
+            try:
+                validated = FinalPlan.model_validate(final_plan).model_dump()
+            except Exception as val_err:
+                # Log detailed validation error for debugging
+                import traceback
+                print(f"FinalPlan validation failed: {val_err}")
+                print(f"Sections count: {len(sections)}")
+                for i, sec in enumerate(sections):
+                    block_types = [b.get('type', '?') for b in sec.get('blocks', [])]
+                    print(f"  Section {i}: id={sec.get('id')}, blocks={block_types}")
+                traceback.print_exc()
+                raise
 
             # Render HTML snapshot and persist the plan
             plan_html = render_template("plan_view.html", plan=validated)
@@ -361,15 +393,25 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 status="complete",
             )
 
+            # Capture token usage
+            usage_summary = tracker.summary()
+            cost_summary = tracker.cost(model_name)
+            token_info = {**usage_summary, **cost_summary}
+
             with JOBS_LOCK:
                 JOBS[job_id]["status"] = "done"
                 JOBS[job_id]["plan"] = validated
                 JOBS[job_id]["plan_id"] = plan_id
+                JOBS[job_id]["token_usage"] = token_info
 
             _job_update(job_id, percent=100, message="Done ✅", log="Done ✅")
 
         except Exception as e:
-            err = str(e)
+            import traceback, io
+            buf = io.StringIO()
+            traceback.print_exc(file=buf)
+            full_tb = buf.getvalue()
+            err = f"{type(e).__name__}: {e}\n\nTRACEBACK:\n{full_tb}"
             # Persist failure record too (intake + normalized if available)
             try:
                 _persist_plan_record(
@@ -396,8 +438,14 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 def generate_job():
     intake = request.get_json(force=True) or {}
 
-    chunk_size = int(request.args.get("chunk_size", 6))
+    chunk_size = int(request.args.get("chunk_size", 4))
     max_workers = int(request.args.get("max_workers", 3))
+
+    # Model selection: allow override via query param or payload
+    ALLOWED_MODELS = {"gpt-5.4-2026-03-05", "gpt-5.4-nano-2026-03-17"}
+    model_name = request.args.get("model") or intake.pop("_model", None) or "gpt-5.4-nano-2026-03-17"
+    if model_name not in ALLOWED_MODELS:
+        model_name = "gpt-5.4-nano-2026-03-17"
 
     job_id = uuid.uuid4().hex
 
@@ -410,11 +458,12 @@ def generate_job():
             "plan": None,
             "error": None,
             "plan_id": None,
+            "model": model_name,
         }
 
     t = threading.Thread(
         target=_run_generation_job,
-        args=(job_id, intake, chunk_size, max_workers),
+        args=(job_id, intake, chunk_size, max_workers, model_name),
         daemon=True,
     )
     t.start()
@@ -470,7 +519,7 @@ def job_events(job_id: str):
                 yield f"event: progress\ndata: {json.dumps(payload)}\n\n"
 
                 if job["status"] == "done":
-                    done_payload = {"view_url": f"/jobs/{job_id}/view", "plan_id": job.get("plan_id")}
+                    done_payload = {"view_url": f"/jobs/{job_id}/view", "plan_id": job.get("plan_id"), "token_usage": job.get("token_usage")}
                     yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
                     return
 
@@ -537,42 +586,106 @@ def plan_export_pdf(plan_id: str):
     if not plan:
         return "Plan not found", 404
 
-    html = plan.plan_html
-    if not html:
-        return "No cached HTML for this plan. Regenerate or store HTML snapshot.", 400
+    plan_data = plan.plan
+    if not plan_data:
+        return "Plan data not available for PDF export", 400
 
-    # Render HTML in headless Chromium and print to PDF
+    # Wrap for Jinja2 dot-notation access
+    wrapped = _DotDict(plan_data)
+
+    html = render_template("plan_pdf.html", plan=wrapped)
+
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-
-        # Images are now base64 data URIs, so domcontentloaded is sufficient
-        # Use increased timeout as a safety measure
         page.set_content(html, wait_until="domcontentloaded", timeout=60000)
 
-        page.add_style_tag(content="""
-        @page {
-        size: A4;
-        margin: 0;
-        }
-        html, body {
-        margin: 0;
-        padding: 0;
-        }
-        """)
         pdf_bytes = page.pdf(
             format="A4",
             print_background=True,
-            margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
+            display_header_footer=True,
+            header_template="<span></span>",
+            footer_template='<div style="width:100%;text-align:center;font-size:9px;color:#999;"><span class="pageNumber"></span></div>',
+            margin={
+                "top": "25mm",
+                "bottom": "28mm",
+                "left": "22mm",
+                "right": "22mm",
+            },
         )
-
         browser.close()
 
-    filename = f"ConceptLB_{(plan.title or plan.id).replace(' ', '_')}.pdf"
+    concept_name = (plan_data.get("plan_meta", {}).get("concept_name", "") or "").strip()
+    safe_name = "".join(c for c in concept_name if c.isalnum() or c in " _-").strip() or "plan"
+    filename = f"ConceptLB_{safe_name}.pdf"
+
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.route("/plans/<plan_id>/export/financial-pdf", methods=["GET"])
+def plan_export_financial_pdf(plan_id: str):
+    conn = db_conn()
+    try:
+        plan = get_plan(conn, plan_id)
+    finally:
+        conn.close()
+
+    if not plan:
+        return "Plan not found", 404
+
+    plan_data = plan.plan
+    if not plan_data:
+        return "Plan data not available", 400
+
+    # Get normalized concept data
+    concept = plan.normalized_intake
+    if not concept:
+        return "Normalized intake not available for financial model", 400
+
+    # Generate financial model
+    from orchestration.financial_model_generator import generate_financial_model
+    fm = generate_financial_model(concept, plan_data.get("derived_financials"))
+
+    concept_name = (plan_data.get("plan_meta", {}) or {}).get("concept_name", "Restaurant")
+    date_str = ((plan_data.get("plan_meta", {}) or {}).get("created_at", "") or "")[:10]
+
+    # Wrap dicts for Jinja2 dot-notation access
+    fm_wrapped = _DotDict(fm)
+
+    html = render_template(
+        "financial_pdf.html",
+        fm=fm_wrapped,
+        concept_name=concept_name,
+        date=date_str,
+    )
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, wait_until="domcontentloaded", timeout=60000)
+
+        pdf_bytes = page.pdf(
+            format="A4",
+            landscape=True,
+            print_background=True,
+            display_header_footer=True,
+            header_template="<span></span>",
+            footer_template='<div style="width:100%;text-align:center;font-size:9px;color:#999;"><span class="pageNumber"></span></div>',
+            margin={"top": "18mm", "bottom": "22mm", "left": "15mm", "right": "15mm"},
+        )
+        browser.close()
+
+    safe_name = "".join(c for c in (concept_name or "plan") if c.isalnum() or c in " _-").strip() or "plan"
+    filename = f"ConceptLB_{safe_name}_FinancialModel.pdf"
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

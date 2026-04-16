@@ -1,48 +1,52 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Generating… — Concept LB</title>
-  <style>
-    body { margin:0; font-family: system-ui, Arial; background:#0b0f14; color:#e8eef6; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px; }
-    .card { background:#111823; border:1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
-    h1 { margin: 0 0 10px; font-size: 22px; }
-    .bar { height: 12px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow:hidden; }
-    .fill { height: 100%; width: 0%; background:#7aa2ff; transition: width .2s ease; }
-    .row { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top: 12px; flex-wrap:wrap; }
-    .hint { color:#a9b4c3; font-size: 13px; }
-    .status { font-size: 15px; margin-top: 10px; }
-    .log { margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px;
-           background:#0f1520; border:1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px; max-height: 260px; overflow:auto; white-space: pre-wrap; }
-    .btn { display:inline-block; background:#7aa2ff; color:#0b0f14; padding:10px 14px; border-radius: 12px; font-weight:700; text-decoration:none; }
-    .err { color:#ffb4b4; margin-top: 10px; white-space: pre-wrap; }
-  </style>
+  <link rel="stylesheet" href="/admin.css" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Generating…</h1>
-      <div class="bar"><div class="fill" id="fill"></div></div>
-
-      <div class="row">
-        <div class="hint">Job: {{ job_id }}</div>
-        <div class="hint" id="pct">0%</div>
+  <div class="wrap" style="max-width:720px;">
+    <div class="topbar" style="margin-bottom:16px;">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1 style="margin:0;">Generating your plan…</h1>
+          <div class="sub">This usually takes 2–4 minutes</div>
+        </div>
       </div>
+    </div>
 
-      <div class="status" id="statusText">Starting…</div>
-      <div class="log" id="log"></div>
-      <div class="err" id="err"></div>
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="font-size:16px; font-weight:600;" id="statusText">Starting…</div>
+          <div class="pill" id="pct">0%</div>
+        </div>
 
-      <div class="row" id="doneRow" style="display:none;">
-        <a class="btn" id="viewBtn" href="#">View Plan</a>
-        <a class="hint" href="/">Back</a>
+        <div class="job-bar">
+          <div class="job-fill" id="fill" style="width:0%;"></div>
+        </div>
+
+        <div class="text-muted text-small" style="margin-top:10px;">Job: {{ job_id }}</div>
+
+        <div class="job-log" id="log"></div>
+        <div class="job-error" id="err"></div>
+
+        <div id="doneRow" style="display:none; margin-top:16px; display:none;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <a class="btn btn-primary" id="viewBtn" href="#">View Plan</a>
+            <a class="btn btn-secondary" href="/wizard">New Plan</a>
+            <a class="text-muted" href="/plans" style="text-decoration:none;">All Plans</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+
     const jobId = "{{ job_id }}";
     const fill = document.getElementById("fill");
     const pct = document.getElementById("pct");
@@ -77,16 +81,33 @@
       es.close();
       setProgress(100, "Done ✅");
 
+      // Show token usage
+      const tu = data.token_usage;
+      if (tu) {
+        const box = document.createElement("div");
+        box.style.cssText = "margin-top:16px; padding:16px; border-radius:12px; border:1px solid var(--border); background:var(--surface);";
+        box.innerHTML = `
+          <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:var(--accent);">Token Usage & Cost</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:13px;">
+            <div><span style="color:var(--dim);">Input</span><br><strong>${(tu.input_tokens || 0).toLocaleString()}</strong> tokens<br><span style="color:var(--dim);">$${(tu.input_cost_usd || 0).toFixed(4)}</span></div>
+            <div><span style="color:var(--dim);">Output</span><br><strong>${(tu.output_tokens || 0).toLocaleString()}</strong> tokens<br><span style="color:var(--dim);">$${(tu.output_cost_usd || 0).toFixed(4)}</span></div>
+            <div><span style="color:var(--dim);">Total</span><br><strong>${(tu.total_tokens || 0).toLocaleString()}</strong> tokens<br><strong style="color:var(--accent);">$${(tu.total_cost_usd || 0).toFixed(4)}</strong></div>
+          </div>
+          <div style="margin-top:8px; font-size:12px; color:var(--dim);">${tu.api_calls || 0} API calls &bull; Model: ${tu.model || '?'}</div>
+        `;
+        document.querySelector(".card-body").appendChild(box);
+      }
+
       const viewUrl = data.view_url || `/jobs/${jobId}/view`;
       viewBtn.href = viewUrl;
-      doneRow.style.display = "flex";
+      doneRow.style.display = "block";
 
-      // auto-redirect after a short beat
-      setTimeout(() => { window.location.href = viewUrl; }, 600);
+      // Longer delay so user can see the token stats
+      setTimeout(() => { window.location.href = viewUrl; }, tu ? 5000 : 600);
     });
 
     es.addEventListener("error", (ev) => {
-      // browser also fires "error" for reconnects; we handle explicit job errors via event "job_error"
+      // browser reconnect events — ignore
     });
 
     es.addEventListener("job_error", (ev) => {
@@ -94,7 +115,7 @@
       es.close();
       errEl.textContent = data.error || "Unknown error";
       statusText.textContent = "Failed ❌";
-      doneRow.style.display = "flex";
+      doneRow.style.display = "block";
       viewBtn.style.display = "none";
     });
   </script>

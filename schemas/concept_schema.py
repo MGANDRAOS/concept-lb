@@ -75,6 +75,17 @@ class ConceptObject(BaseModel):
     operating_days_per_week: Optional[int] = None
     alcohol_license_status: Optional[Literal["confirmed", "applying", "not_allowed"]] = None
 
+    # P2: Financial model anchors
+    opening_budget_usd: Optional[float] = None
+    funding_equity_pct: Optional[float] = Field(default=50, ge=0, le=100)
+    funding_loan_pct: Optional[float] = Field(default=50, ge=0, le=100)
+    avg_check_morning: Optional[float] = None
+    avg_check_daytime: Optional[float] = None
+    avg_check_evening: Optional[float] = None
+    revenue_growth_pct: Optional[float] = Field(default=3, ge=0, le=20)
+    ramp_up_months: Optional[int] = Field(default=4, ge=1, le=12)
+    ramp_start_pct: Optional[float] = Field(default=60, ge=10, le=100)
+
     # Confidence map for any fields (anchors + others)
     confidence: Dict[str, ConfidenceSource] = Field(default_factory=dict)
 

@@ -1,85 +1,278 @@
-{# templates/plan_detail.html #}
+{# templates/plan_detail.html — Premium plan detail with immersive preview #}
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>{{ plan.title or plan.id }} — Concept LB</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 24px; }
-      .top { display:flex; align-items:center; gap:12px; }
-      .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border:1px solid #ddd; }
-      .actions { margin-left:auto; display:flex; gap:10px; }
-      .btn { padding:8px 10px; border:1px solid #ddd; border-radius:8px; text-decoration:none; color:#111; }
-      pre { background:#fafafa; padding:12px; border:1px solid #eee; overflow:auto; }
-      .tabs { display:flex; gap:8px; margin:16px 0; }
-      .tab { padding:8px 10px; border:1px solid #ddd; border-radius: 999px; cursor:pointer; user-select:none; }
-      .tab.active { background:#111; color:#fff; border-color:#111; }
-      .panel { display:none; }
-      .panel.active { display:block; }
-      iframe { width: 100%; height: 80vh; border:1px solid #eee; }
-    </style>
-  </head>
-  <body>
-    <div class="top">
-      <a href="/plans">← Plans</a>
-      <h2 style="margin:0;">{{ plan.title or plan.id }}</h2>
-      <span class="badge">{{ plan.status }}</span>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ plan.title or plan.id }} — Concept LB</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fafafa; --bg2: #f4f4f5; --surface: #e4e4e7;
+      --border: #d4d4d8; --border2: #a1a1aa;
+      --text: #09090b; --text2: #27272a; --subtle: #71717a; --dim: #a1a1aa;
+      --accent: #6366f1; --accent2: #4f46e5; --accent-glow: rgba(99,102,241,.1);
+      --green: #059669; --green-bg: rgba(5,150,105,.06);
+      --red: #dc2626; --red-bg: rgba(220,38,38,.05);
+      --radius: 12px; --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; }
 
-      <div class="actions">
-        <a class="btn" href="/plans/{{ plan.id }}/export/pdf">Export PDF</a>
+    /* ── Top Chrome ───────────────────────────────────── */
+    .chrome { flex-shrink: 0; backdrop-filter: blur(20px) saturate(1.4); background: rgba(250,250,250,.92); border-bottom: 1px solid var(--border); z-index: 100; }
+    .chrome-inner { max-width: 100%; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .chrome-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--subtle); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); flex-shrink: 0; }
+    .icon-btn:hover { border-color: var(--border2); color: var(--text); }
+    .chrome-title { min-width: 0; }
+    .chrome-title h1 { font-size: 15px; font-weight: 700; letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chrome-title .meta { font-size: 11px; color: var(--dim); }
+    .badge { padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+    .badge-complete { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+    .badge-failed { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+    .badge-draft { background: var(--surface); color: var(--dim); border: 1px solid var(--border); }
+
+    .chrome-center { display: flex; gap: 2px; background: var(--surface); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+    .chrome-tab { padding: 5px 14px; border-radius: 6px; border: none; background: transparent; color: var(--dim); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: var(--transition); white-space: nowrap; }
+    .chrome-tab:hover { color: var(--text); }
+    .chrome-tab.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(129,140,248,.15); }
+
+    .chrome-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .btn { padding: 7px 14px; border-radius: 8px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px; border: none; text-decoration: none; white-space: nowrap; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-secondary { background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
+    .btn-secondary:hover { border-color: var(--border2); }
+    .btn svg { width: 14px; height: 14px; }
+
+    /* ── Content Area (fills remaining space) ─────────── */
+    .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Stats Bar (collapsible) ──────────────────────── */
+    .stats-bar { flex-shrink: 0; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; gap: 24px; align-items: center; overflow-x: auto; }
+    .stats-bar.hidden { display: none; }
+    .stat { display: flex; flex-direction: column; }
+    .stat-label { font-size: 10px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
+    .stat-value { font-size: 16px; font-weight: 800; letter-spacing: -.2px; margin-top: 1px; }
+    .stat-sub { font-size: 11px; color: var(--dim); }
+    .stat-accent .stat-value { color: var(--accent); }
+    .stat-divider { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
+
+    /* ── Preview Panel ────────────────────────────────── */
+    .panel { flex: 1; display: none; overflow: hidden; }
+    .panel.active { display: flex; flex-direction: column; }
+
+    .preview-container { flex: 1; position: relative; background: #f0f0f0; overflow: hidden; }
+    :root.light .preview-container { background: #e4e4e7; }
+
+    .preview-container iframe {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      border: none; background: #fff;
+      transform-origin: top center;
+    }
+
+    /* Zoom controls */
+    .zoom-bar { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+      display: flex; gap: 4px; padding: 4px; border-radius: 10px;
+      background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .zoom-btn { width: 34px; height: 30px; border-radius: 6px; border: none; background: transparent; color: var(--subtle); cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+    .zoom-btn:hover { background: rgba(0,0,0,.05); color: var(--text); }
+    .zoom-btn.active { background: var(--accent-glow); color: var(--accent); }
+    .zoom-label { padding: 0 8px; display: flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--subtle); min-width: 48px; justify-content: center; }
+
+    /* ── JSON Panel ────────────────────────────────────── */
+    .json-panel { flex: 1; overflow: auto; padding: 20px; }
+    .json-panel pre {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; margin: 0; font-size: 13px; line-height: 1.6;
+      font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* ── Error ─────────────────────────────────────────── */
+    .error-banner { flex-shrink: 0; padding: 10px 20px; background: var(--red-bg); border-bottom: 1px solid rgba(248,113,113,.15); font-size: 13px; color: var(--red); }
+
+    /* ── Empty state ───────────────────────────────────── */
+    .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--dim); font-size: 15px; }
+
+    /* ── Fullscreen ────────────────────────────────────── */
+    body.fullscreen .chrome, body.fullscreen .stats-bar { display: none; }
+    body.fullscreen .content { height: 100vh; }
+
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <!-- Top Chrome -->
+  <div class="chrome">
+    <div class="chrome-inner">
+      <div class="chrome-left">
+        <a href="/plans" class="icon-btn" title="Back to plans">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        </a>
+        <div class="chrome-title">
+          <h1>{{ plan.title or plan.id }}</h1>
+          <div class="meta">{{ plan.created_at[:16] if plan.created_at else '' }} &bull; {{ plan.model or "" }}</div>
+        </div>
+        <span class="badge {% if plan.status == 'complete' %}badge-complete{% elif plan.status == 'failed' %}badge-failed{% else %}badge-draft{% endif %}">
+          {{ plan.status }}
+        </span>
+      </div>
+
+      <div class="chrome-center">
+        <button class="chrome-tab active" data-tab="preview">Preview</button>
+        <button class="chrome-tab" data-tab="plan">Plan JSON</button>
+        <button class="chrome-tab" data-tab="intake">Intake</button>
+        <button class="chrome-tab" data-tab="normalized">Normalized</button>
+      </div>
+
+      <div class="chrome-right">
+        {% if plan.status == 'complete' %}
+          <a class="btn btn-primary" href="/plans/{{ plan.id }}/export/pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Business Plan
+          </a>
+          <a class="btn btn-secondary" href="/plans/{{ plan.id }}/export/financial-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Financial
+          </a>
+        {% endif %}
+        <button class="icon-btn" id="statsToggle" onclick="toggleStats()" title="Toggle stats">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleFullscreen()" title="Fullscreen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
       </div>
     </div>
+  </div>
 
-    <p style="color:#666;">
-      Created: {{ plan.created_at }} • Updated: {{ plan.updated_at }} • Model: {{ plan.model or "" }} • Locale: {{ plan.locale or "" }}
-    </p>
+  {% if plan.error_message %}
+  <div class="error-banner">{{ plan.error_message[:300] }}</div>
+  {% endif %}
 
-    <div class="tabs">
-      <div class="tab active" data-tab="html">HTML Preview</div>
-      <div class="tab" data-tab="planjson">Plan JSON</div>
-      <div class="tab" data-tab="intake">Intake JSON</div>
-      <div class="tab" data-tab="normalized">Normalized Intake</div>
+  <!-- Stats Bar -->
+  {% set tu = (plan.plan or {}).get('token_usage') %}
+  <div class="stats-bar {% if not tu %}hidden{% endif %}" id="statsBar">
+    {% if tu %}
+    <div class="stat">
+      <div class="stat-label">Input</div>
+      <div class="stat-value">{{ "{:,}".format(tu.get('input_tokens', 0)) }}</div>
+      <div class="stat-sub">${{ "%.4f"|format(tu.get('input_cost_usd', 0)) }}</div>
     </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-label">Output</div>
+      <div class="stat-value">{{ "{:,}".format(tu.get('output_tokens', 0)) }}</div>
+      <div class="stat-sub">${{ "%.4f"|format(tu.get('output_cost_usd', 0)) }}</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat stat-accent">
+      <div class="stat-label">Total Cost</div>
+      <div class="stat-value">${{ "%.4f"|format(tu.get('total_cost_usd', 0)) }}</div>
+      <div class="stat-sub">{{ "{:,}".format(tu.get('total_tokens', 0)) }} tokens</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <div class="stat-label">Model</div>
+      <div class="stat-value" style="font-size:13px; margin-top:3px;">{{ tu.get('model', '—') }}</div>
+      <div class="stat-sub">{{ tu.get('api_calls', 0) }} API calls</div>
+    </div>
+    {% endif %}
+  </div>
 
-    <div id="panel-html" class="panel active">
+  <!-- Content -->
+  <div class="content">
+    <!-- Preview Panel -->
+    <div class="panel active" id="panel-preview">
       {% if plan.plan_html %}
-        <iframe srcdoc="{{ plan.plan_html | e }}"></iframe>
+      <div class="preview-container">
+        <iframe id="previewFrame" srcdoc="{{ plan.plan_html | e }}"></iframe>
+        <div class="zoom-bar">
+          <button class="zoom-btn" onclick="zoom(-10)">−</button>
+          <div class="zoom-label" id="zoomLabel">100%</div>
+          <button class="zoom-btn" onclick="zoom(10)">+</button>
+          <button class="zoom-btn" onclick="zoomReset()">Reset</button>
+          <button class="zoom-btn" onclick="zoomFit()">Fit</button>
+        </div>
+      </div>
       {% else %}
-        <p>No cached HTML for this plan.</p>
+      <div class="empty">No HTML preview available for this plan.</div>
       {% endif %}
     </div>
 
-    <div id="panel-planjson" class="panel">
-      <pre>{{ (plan.plan or {}) | tojson(indent=2) }}</pre>
+    <!-- JSON Panels -->
+    <div class="panel" id="panel-plan">
+      <div class="json-panel"><pre>{{ (plan.plan or {}) | tojson(indent=2) }}</pre></div>
     </div>
-
-    <div id="panel-intake" class="panel">
-      <pre>{{ (plan.intake or {}) | tojson(indent=2) }}</pre>
+    <div class="panel" id="panel-intake">
+      <div class="json-panel"><pre>{{ (plan.intake or {}) | tojson(indent=2) }}</pre></div>
     </div>
-
-    <div id="panel-normalized" class="panel">
-      <pre>{{ (plan.normalized_intake or {}) | tojson(indent=2) }}</pre>
+    <div class="panel" id="panel-normalized">
+      <div class="json-panel"><pre>{{ (plan.normalized_intake or {}) | tojson(indent=2) }}</pre></div>
     </div>
+  </div>
 
-    <script>
-      const tabs = document.querySelectorAll(".tab");
-      const panels = {
-        html: document.getElementById("panel-html"),
-        planjson: document.getElementById("panel-planjson"),
-        intake: document.getElementById("panel-intake"),
-        normalized: document.getElementById("panel-normalized"),
-      };
-
-      tabs.forEach(t => {
-        t.addEventListener("click", () => {
-          tabs.forEach(x => x.classList.remove("active"));
-          Object.values(panels).forEach(p => p.classList.remove("active"));
-
-          t.classList.add("active");
-          const key = t.getAttribute("data-tab");
-          panels[key].classList.add("active");
-        });
+  <script>
+    // Tabs
+    document.querySelectorAll('.chrome-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.chrome-tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('panel-' + t.dataset.tab).classList.add('active');
       });
-    </script>
-  </body>
+    });
+
+    // Stats toggle
+    function toggleStats() {
+      document.getElementById('statsBar').classList.toggle('hidden');
+    }
+
+    // Fullscreen
+    function toggleFullscreen() {
+      document.body.classList.toggle('fullscreen');
+    }
+
+    // Zoom
+    let currentZoom = 100;
+    const frame = document.getElementById('previewFrame');
+
+    function applyZoom() {
+      if (!frame) return;
+      const scale = currentZoom / 100;
+      frame.style.transform = `scale(${scale})`;
+      frame.style.width = (100 / scale) + '%';
+      frame.style.height = (100 / scale) + '%';
+      document.getElementById('zoomLabel').textContent = currentZoom + '%';
+    }
+
+    function zoom(delta) {
+      currentZoom = Math.max(25, Math.min(200, currentZoom + delta));
+      applyZoom();
+    }
+
+    function zoomReset() {
+      currentZoom = 100;
+      applyZoom();
+    }
+
+    function zoomFit() {
+      currentZoom = 75;
+      applyZoom();
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.body.classList.remove('fullscreen');
+      if (e.ctrlKey && e.key === '=') { e.preventDefault(); zoom(10); }
+      if (e.ctrlKey && e.key === '-') { e.preventDefault(); zoom(-10); }
+      if (e.ctrlKey && e.key === '0') { e.preventDefault(); zoomReset(); }
+      if (e.key === 'f' && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') toggleFullscreen();
+    });
+  </script>
+</body>
 </html>
