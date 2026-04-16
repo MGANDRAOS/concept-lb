@@ -75,7 +75,8 @@
     .panel-tab.active { display: block; }
 
     /* Preview */
-    iframe { width: 100%; height: 82vh; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); }
+    iframe { width: 100%; height: calc(100vh - 100px); border: none; border-radius: var(--radius); background: #fff; }
+    .preview-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; overflow: hidden; }
     pre { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; overflow: auto; max-height: 75vh; font-size: 13px; line-height: 1.6; font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace; }
 
     /* Animation */
@@ -170,7 +171,9 @@
 
     <div id="panel-html" class="panel-tab active">
       {% if plan.plan_html %}
-        <iframe srcdoc="{{ plan.plan_html | e }}"></iframe>
+        <div class="preview-wrap">
+          <iframe srcdoc="{{ plan.plan_html | e }}"></iframe>
+        </div>
       {% else %}
         <div style="padding:60px; text-align:center; color:var(--dim); border:1px dashed var(--border); border-radius:var(--radius);">
           No HTML preview available for this plan.
