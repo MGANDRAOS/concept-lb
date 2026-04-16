@@ -31,7 +31,14 @@ from playwright.sync_api import sync_playwright
 
 
 
-app = Flask(__name__, static_folder="static", static_url_path="/", instance_relative_config=True)
+_HERE = os.path.dirname(os.path.abspath(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(_HERE, "templates"),
+    static_folder=os.path.join(_HERE, "static"),
+    static_url_path="/",
+    instance_relative_config=True,
+)
 CORS(app)
 app.config.from_object(Config)
 
@@ -690,4 +697,6 @@ def plan_export_financial_pdf(plan_id: str):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import sys
+    os.chdir(_HERE)  # Ensure CWD is project root
+    app.run(debug=True, use_reloader="--no-reload" not in sys.argv)
