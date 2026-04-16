@@ -1,90 +1,179 @@
-{# templates/plan_detail.html #}
+{# templates/plan_detail.html — Premium plan detail view #}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ plan.title or plan.id }} — Concept LB</title>
-  <link rel="stylesheet" href="/admin.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    iframe { width: 100%; height: 80vh; border: 1px solid var(--stroke); border-radius: 12px; background: var(--panel2); }
-    pre { background: var(--panel2); border: 1px solid var(--stroke); border-radius: 12px; padding: 16px; overflow: auto; max-height: 70vh; font-size: 13px; line-height: 1.6; }
+    :root {
+      --bg: #09090b; --bg2: #18181b; --surface: #27272a;
+      --border: #3f3f46; --border2: #52525b;
+      --text: #fafafa; --text2: #d4d4d8; --subtle: #a1a1aa; --dim: #71717a;
+      --accent: #818cf8; --accent2: #6366f1; --accent-glow: rgba(129,140,248,.15);
+      --green: #34d399; --green-bg: rgba(52,211,153,.1);
+      --red: #f87171; --red-bg: rgba(248,113,113,.08);
+      --input: rgba(39,39,42,.6);
+      --radius: 12px; --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+    :root.light {
+      --bg: #fafafa; --bg2: #f4f4f5; --surface: #e4e4e7;
+      --border: #d4d4d8; --border2: #a1a1aa;
+      --text: #09090b; --text2: #27272a; --subtle: #71717a; --dim: #a1a1aa;
+      --accent: #6366f1; --accent2: #4f46e5; --accent-glow: rgba(99,102,241,.1);
+      --green: #059669; --green-bg: rgba(5,150,105,.06);
+      --red: #dc2626; --red-bg: rgba(220,38,38,.05);
+      --input: #ffffff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+    /* Chrome */
+    .chrome { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9,9,11,.7); border-bottom: 1px solid var(--border); }
+    :root.light .chrome { background: rgba(250,250,250,.85); }
+    .chrome-inner { max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .chrome-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .back-btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--subtle); font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); text-decoration: none; font-family: inherit; white-space: nowrap; }
+    .back-btn:hover { border-color: var(--border2); color: var(--text); }
+    .chrome-title { min-width: 0; }
+    .chrome-title h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+    .chrome-title .meta { font-size: 12px; color: var(--dim); margin-top: 2px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .badge-complete { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+    .badge-failed { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+    .badge-draft { background: var(--surface); color: var(--dim); border: 1px solid var(--border); }
+    .chrome-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .btn { padding: 9px 18px; border-radius: 10px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 6px; border: none; text-decoration: none; white-space: nowrap; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 2px 12px rgba(99,102,241,.25); }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-secondary { background: transparent; border: 1.5px solid var(--border); color: var(--text2); }
+    .btn-secondary:hover { border-color: var(--border2); }
+    .theme-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--subtle); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+    .theme-btn:hover { border-color: var(--border2); color: var(--text); }
+
+    /* Layout */
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; }
+
+    /* Error */
+    .error-box { padding: 14px 18px; border-radius: var(--radius); background: var(--red-bg); border: 1px solid rgba(248,113,113,.2); color: var(--text); font-size: 14px; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { padding: 16px 20px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
+    .stat-label { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
+    .stat-value { font-size: 20px; font-weight: 800; margin-top: 4px; letter-spacing: -.3px; }
+    .stat-sub { font-size: 12px; color: var(--dim); margin-top: 2px; }
+    .stat-accent .stat-value { color: var(--accent); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; background: var(--surface); padding: 4px; border-radius: 10px; border: 1px solid var(--border); width: fit-content; }
+    .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; user-select: none; font-size: 13px; font-weight: 500; color: var(--dim); background: transparent; transition: var(--transition); border: none; font-family: inherit; }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--accent-glow); color: var(--accent); font-weight: 600; border: 1px solid rgba(129,140,248,.2); }
+    .panel-tab { display: none; }
+    .panel-tab.active { display: block; }
+
+    /* Preview */
+    iframe { width: 100%; height: 82vh; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); }
+    pre { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; overflow: auto; max-height: 75vh; font-size: 13px; line-height: 1.6; font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+
+    /* Animation */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .animate { animation: fadeIn .3s cubic-bezier(.4,0,.2,1) both; }
+
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
   <script>
-    (function() {
-      if (localStorage.getItem('conceptlb_theme') === 'light') document.documentElement.classList.add('light');
-    })();
+    (function() { if (localStorage.getItem('conceptlb_theme') === 'light') document.documentElement.classList.add('light'); })();
   </script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <a href="/plans" class="btn-ghost" style="text-decoration:none; padding:8px 12px; border-radius:10px; border:1px solid var(--stroke);">← Plans</a>
-        <div>
-          <h1 style="margin:0;">{{ plan.title or plan.id }}</h1>
-          <div class="sub">
-            Created {{ plan.created_at }} &bull; {{ plan.model or "" }} &bull; {{ plan.locale or "" }}
-          </div>
+  <!-- Chrome -->
+  <div class="chrome">
+    <div class="chrome-inner">
+      <div class="chrome-left">
+        <a href="/plans" class="back-btn">← Plans</a>
+        <div class="chrome-title">
+          <h1>{{ plan.title or plan.id }}</h1>
+          <div class="meta">Created {{ plan.created_at[:16] if plan.created_at else '' }} &bull; {{ plan.model or "" }}</div>
         </div>
-        <span class="badge {% if plan.status == 'complete' %}badge-complete{% elif plan.status == 'failed' %}badge-failed{% endif %}" style="margin-left:8px;">
+        <span class="badge {% if plan.status == 'complete' %}badge-complete{% elif plan.status == 'failed' %}badge-failed{% else %}badge-draft{% endif %}">
           {{ plan.status }}
         </span>
       </div>
-
-      <div class="topbar-actions">
+      <div class="chrome-actions">
         {% if plan.status == 'complete' %}
-          <a class="btn btn-primary" href="/plans/{{ plan.id }}/export/pdf">Download Business Plan PDF</a>
-          <a class="btn btn-secondary" href="/plans/{{ plan.id }}/export/financial-pdf">Download Financial Model PDF</a>
+          <a class="btn btn-primary" href="/plans/{{ plan.id }}/export/pdf">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Business Plan PDF
+          </a>
+          <a class="btn btn-secondary" href="/plans/{{ plan.id }}/export/financial-pdf">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Financial Model PDF
+          </a>
         {% endif %}
-        <button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
       </div>
     </div>
+  </div>
 
+  <div class="main animate">
     {% if plan.error_message %}
-    <div class="warn-box" style="display:block; margin-bottom:16px;">
-      {{ plan.error_message[:500] }}
-    </div>
+    <div class="error-box">{{ plan.error_message[:500] }}</div>
     {% endif %}
 
+    <!-- Stats -->
     {% set tu = (plan.plan or {}).get('token_usage') %}
     {% if tu %}
-    <div class="card" style="margin-bottom:16px; padding:16px 20px;">
-      <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:var(--brand, #818cf8);">Token Usage & Cost</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; font-size:14px;">
-        <div>
-          <div style="color:var(--muted, #71717a); font-size:12px;">Input</div>
-          <div style="font-weight:700;">{{ "{:,}".format(tu.get('input_tokens', 0)) }} tokens</div>
-          <div style="color:var(--muted, #71717a); font-size:13px;">${{ "%.4f"|format(tu.get('input_cost_usd', 0)) }}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted, #71717a); font-size:12px;">Output</div>
-          <div style="font-weight:700;">{{ "{:,}".format(tu.get('output_tokens', 0)) }} tokens</div>
-          <div style="color:var(--muted, #71717a); font-size:13px;">${{ "%.4f"|format(tu.get('output_cost_usd', 0)) }}</div>
-        </div>
-        <div>
-          <div style="color:var(--muted, #71717a); font-size:12px;">Total</div>
-          <div style="font-weight:700;">{{ "{:,}".format(tu.get('total_tokens', 0)) }} tokens</div>
-          <div style="font-weight:700; color:var(--brand, #818cf8);">${{ "%.4f"|format(tu.get('total_cost_usd', 0)) }}</div>
-        </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Input Tokens</div>
+        <div class="stat-value">{{ "{:,}".format(tu.get('input_tokens', 0)) }}</div>
+        <div class="stat-sub">${{ "%.4f"|format(tu.get('input_cost_usd', 0)) }}</div>
       </div>
-      <div style="margin-top:8px; font-size:12px; color:var(--muted, #71717a);">{{ tu.get('api_calls', 0) }} API calls &bull; Model: {{ tu.get('model', '?') }}</div>
+      <div class="stat-card">
+        <div class="stat-label">Output Tokens</div>
+        <div class="stat-value">{{ "{:,}".format(tu.get('output_tokens', 0)) }}</div>
+        <div class="stat-sub">${{ "%.4f"|format(tu.get('output_cost_usd', 0)) }}</div>
+      </div>
+      <div class="stat-card stat-accent">
+        <div class="stat-label">Total Cost</div>
+        <div class="stat-value">${{ "%.4f"|format(tu.get('total_cost_usd', 0)) }}</div>
+        <div class="stat-sub">{{ "{:,}".format(tu.get('total_tokens', 0)) }} tokens &bull; {{ tu.get('api_calls', 0) }} calls</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Model</div>
+        <div class="stat-value" style="font-size:14px; margin-top:8px;">{{ tu.get('model', '—') }}</div>
+      </div>
+    </div>
+    {% elif plan.status == 'complete' %}
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Sections</div>
+        <div class="stat-value">{{ ((plan.plan or {}).get('sections') or [])|length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Status</div>
+        <div class="stat-value" style="color:var(--green);">Complete</div>
+      </div>
     </div>
     {% endif %}
 
+    <!-- Tabs -->
     <div class="tabs">
-      <div class="tab active" data-tab="html">HTML Preview</div>
-      <div class="tab" data-tab="planjson">Plan JSON</div>
-      <div class="tab" data-tab="intake">Intake JSON</div>
-      <div class="tab" data-tab="normalized">Normalized Intake</div>
+      <button class="tab active" data-tab="html">Preview</button>
+      <button class="tab" data-tab="planjson">Plan JSON</button>
+      <button class="tab" data-tab="intake">Intake</button>
+      <button class="tab" data-tab="normalized">Normalized</button>
     </div>
 
     <div id="panel-html" class="panel-tab active">
       {% if plan.plan_html %}
         <iframe srcdoc="{{ plan.plan_html | e }}"></iframe>
       {% else %}
-        <div class="card" style="padding:40px; text-align:center; color:var(--muted);">
-          No cached HTML for this plan.
+        <div style="padding:60px; text-align:center; color:var(--dim); border:1px dashed var(--border); border-radius:var(--radius);">
+          No HTML preview available for this plan.
         </div>
       {% endif %}
     </div>
@@ -104,30 +193,19 @@
 
   <script>
     function toggleTheme() {
-      const html = document.documentElement;
-      const isLight = html.classList.toggle('light');
+      const isLight = document.documentElement.classList.toggle('light');
       localStorage.setItem('conceptlb_theme', isLight ? 'light' : 'dark');
       document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
     }
-    if (localStorage.getItem('conceptlb_theme') === 'light') {
+    if (localStorage.getItem('conceptlb_theme') === 'light')
       document.getElementById('themeBtn').textContent = '☀️';
-    }
 
-    // Tabs
-    const tabs = document.querySelectorAll(".tab");
-    const panels = {
-      html: document.getElementById("panel-html"),
-      planjson: document.getElementById("panel-planjson"),
-      intake: document.getElementById("panel-intake"),
-      normalized: document.getElementById("panel-normalized"),
-    };
-
-    tabs.forEach(t => {
-      t.addEventListener("click", () => {
-        tabs.forEach(x => x.classList.remove("active"));
-        Object.values(panels).forEach(p => p.classList.remove("active"));
-        t.classList.add("active");
-        panels[t.getAttribute("data-tab")].classList.add("active");
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.panel-tab').forEach(p => p.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('panel-' + t.dataset.tab).classList.add('active');
       });
     });
   </script>
