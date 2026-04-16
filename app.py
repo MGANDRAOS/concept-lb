@@ -42,6 +42,21 @@ def db_conn():
     return connect(DB_PATH)
 
 
+class _DotDict:
+    """Wrap a dict for Jinja2 dot-notation attribute access."""
+    def __init__(self, d):
+        for k, v in (d or {}).items():
+            if isinstance(v, dict):
+                setattr(self, k, _DotDict(v))
+            elif isinstance(v, list):
+                setattr(self, k, [_DotDict(i) if isinstance(i, dict) else i for i in v])
+            else:
+                setattr(self, k, v)
+
+    def __getattr__(self, name):
+        return None
+
+
 # --- Jobs memory store (existing) ---
 JOBS: Dict[str, Dict[str, Any]] = {}
 JOBS_LOCK = threading.Lock()
@@ -537,42 +552,43 @@ def plan_export_pdf(plan_id: str):
     if not plan:
         return "Plan not found", 404
 
-    html = plan.plan_html
-    if not html:
-        return "No cached HTML for this plan. Regenerate or store HTML snapshot.", 400
+    plan_data = plan.plan
+    if not plan_data:
+        return "Plan data not available for PDF export", 400
 
-    # Render HTML in headless Chromium and print to PDF
+    # Wrap for Jinja2 dot-notation access
+    wrapped = _DotDict(plan_data)
+
+    html = render_template("plan_pdf.html", plan=wrapped)
+
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-
-        # Images are now base64 data URIs, so domcontentloaded is sufficient
-        # Use increased timeout as a safety measure
         page.set_content(html, wait_until="domcontentloaded", timeout=60000)
 
-        page.add_style_tag(content="""
-        @page {
-        size: A4;
-        margin: 0;
-        }
-        html, body {
-        margin: 0;
-        padding: 0;
-        }
-        """)
         pdf_bytes = page.pdf(
             format="A4",
             print_background=True,
-            margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
+            display_header_footer=True,
+            header_template="<span></span>",
+            footer_template='<div style="width:100%;text-align:center;font-size:9px;color:#999;"><span class="pageNumber"></span></div>',
+            margin={
+                "top": "25mm",
+                "bottom": "28mm",
+                "left": "22mm",
+                "right": "22mm",
+            },
         )
-
         browser.close()
 
-    filename = f"ConceptLB_{(plan.title or plan.id).replace(' ', '_')}.pdf"
+    concept_name = (plan_data.get("plan_meta", {}).get("concept_name", "") or "").strip()
+    safe_name = "".join(c for c in concept_name if c.isalnum() or c in " _-").strip() or "plan"
+    filename = f"ConceptLB_{safe_name}.pdf"
+
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
