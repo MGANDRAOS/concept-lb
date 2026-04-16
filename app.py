@@ -116,7 +116,7 @@ def generate_html():
     included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
     included_specs.sort(key=lambda s: s.get("order", 0))
 
-    chunk_size = int(request.args.get("chunk_size", 6))
+    chunk_size = int(request.args.get("chunk_size", 4))
     chunks = list(_chunk_list(included_specs, chunk_size))
     total_chunks = max(1, len(chunks))
 
@@ -128,7 +128,7 @@ def generate_html():
             section_specs=specs_chunk,
             include_assumptions=include_assumptions,
             model_name="gpt-5.2",
-            max_output_tokens=3200 if not include_assumptions else 4200,
+            max_output_tokens=8000 if not include_assumptions else 10000,
             generate_images=True,
         )
         return chunk_index, bundle
@@ -293,7 +293,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                     section_specs=specs_chunk,
                     include_assumptions=include_assumptions,
                     model_name="gpt-5.2",
-                    max_output_tokens=3200 if not include_assumptions else 4200,
+                    max_output_tokens=8000 if not include_assumptions else 10000,
                 )
                 return chunk_index, bundle
 
@@ -411,7 +411,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 def generate_job():
     intake = request.get_json(force=True) or {}
 
-    chunk_size = int(request.args.get("chunk_size", 6))
+    chunk_size = int(request.args.get("chunk_size", 4))
     max_workers = int(request.args.get("max_workers", 3))
 
     job_id = uuid.uuid4().hex

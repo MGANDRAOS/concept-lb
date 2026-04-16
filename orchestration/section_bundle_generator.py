@@ -7,7 +7,7 @@ from orchestration.image_generator import generate_section_images
 
 
 BUNDLE_SYSTEM_PROMPT = """
-You are Concept LB, a restaurant concept development system.
+You are Concept LB, a senior hospitality consultant presenting a restaurant concept to investors.
 
 TASK:
 Generate MULTIPLE requested sections for a restaurant concept plan in ONE response.
@@ -26,7 +26,8 @@ A) Normal bundle:
         { "type": "paragraph", "text": "..." },
         { "type": "bullets", "items": ["...", "..."] },
         { "type": "callout", "title": "...", "text": "..." },
-        { "type": "table", "columns": ["..."], "rows": [["..."]] }
+        { "type": "table", "columns": ["..."], "rows": [["..."]] },
+        { "type": "menu_items", "category": "...", "items": [{"name": "DISH NAME", "description": "Ingredient, Ingredient, Sauce"}] }
       ]
     }
   ]
@@ -47,12 +48,35 @@ CONTENT RULES:
   - id MUST match the spec id EXACTLY.
   - Include ALL required block types listed in the spec.
   - Do NOT reference other sections.
-  - Do NOT mention AI or prompts.
-- Keep content consultant-grade and structured.
+  - Do NOT mention AI, prompts, or that this was generated.
+- Keep content consultant-grade, specific, and actionable.
+- Avoid generic statements. Be specific to this concept, this city, this cuisine.
 - If concept.derived_financials.outputs is present:
   - Use those numbers exactly for any revenue/margin/breakeven mentions.
   - Do NOT invent or recompute alternative totals.
   - If an output is null, state it cannot be computed yet due to missing inputs.
+
+MENU SECTION RULES (for sections with menu_items in required_blocks):
+- Generate a complete menu with specific dishes.
+- Each dish MUST have: a creative name appropriate to the cuisine, and a comma-separated ingredient list.
+- Use the "menu_items" block type with "category" and "items" array.
+- Each item has "name" (uppercase string) and "description" (ingredients string).
+- Generate 8-15 dishes per meal period.
+- Dishes must reflect the cuisine type and incorporate local ingredients.
+- Name specific cheeses, herbs, proteins, sauces, and produce — not generic terms.
+- Include at least one "WEEKLY SPECIAL" placeholder per category with description "Created by Our Team to Highlight Amazing Seasonal Ingredients".
+
+FOUNDER INTEGRATION:
+- Naturally reference the founder's relevant experience in concept_overview, food_program, location_strategy, our_guests, and ownership_profile sections.
+- Write as if you (the consultant) have interviewed the founder and are presenting their vision.
+
+CONFIDENCE-AWARE WRITING:
+- When a financial anchor has confidence="user_provided", state it as decided fact.
+- When confidence="ai_assumed", frame as recommendation: "Based on market analysis, we recommend..."
+- When confidence="user_unknown", acknowledge: "This will be determined based on..."
+
+SECTION-SPECIFIC HINTS:
+Each section spec includes a "prompt_hint" field. Follow its guidance for that section's content, depth, and structure.
 """.strip()
 
 
@@ -90,7 +114,7 @@ def generate_sections_bundle(
     *,
     include_assumptions: bool,
     model_name: str = "gpt-5.2",
-    max_output_tokens: int = 3200,
+    max_output_tokens: int = 8000,
     generate_images: bool = True,
 ) -> Dict[str, Any]:
 
@@ -137,7 +161,20 @@ def generate_sections_bundle(
 
     anchors_block = "\n".join(anchors_summary_lines)
     anchors_summary_lines.append("IMMUTABLE VALUES: Any field marked user_provided must be copied exactly as-is.")
-    
+
+    # Market context injection
+    market_ctx_block = ""
+    try:
+        from orchestration.market_data import get_market_context
+        market_ctx = get_market_context(
+            concept.get("country", ""),
+            concept.get("city", "")
+        )
+        if market_ctx:
+            market_ctx_block = f"\nMARKET CONTEXT for {concept.get('city', '')}, {concept.get('country', '')}:\n{market_ctx}\n\nUse this data to make content specific and locally relevant.\n"
+    except ImportError:
+        pass  # market_data module not yet available
+
     assumptions_instruction = ""
     if include_assumptions:
         assumptions_instruction = """
@@ -172,7 +209,7 @@ def generate_sections_bundle(
         """
 
     user_prompt = BUNDLE_USER_PROMPT_TEMPLATE.format(
-        concept_json=f"{anchors_block}\n\n{concept_json}",
+        concept_json=f"{anchors_block}\n{market_ctx_block}\n{concept_json}",
         specs_json=specs_json,
         assumptions_instruction=assumptions_instruction,
     )
@@ -193,7 +230,7 @@ def generate_sections_bundle(
             user_prompt=user_prompt,
             model_name=model_name,
             reasoning_effort=None,
-            max_output_tokens=max(max_output_tokens, 4000),
+            max_output_tokens=max(max_output_tokens, 10000),
         )
 
     # Repair if shape broken
