@@ -100,6 +100,16 @@ def generate_section_images(
             "dramatic lighting, open kitchen visible in background, curated decor details, "
             "wide-angle architectural photography with rich warm tones"
         ),
+        "brand_positioning": (
+            "overhead flat-lay photograph of restaurant branding materials on a marble surface, "
+            "elegant menu cards, branded takeout packaging, business cards, napkins with logo, "
+            "design studio aesthetic, soft diffused natural lighting, editorial composition"
+        ),
+        "our_guests": (
+            "candid lifestyle photograph of diverse groups of friends enjoying food and drinks "
+            "at a stylish restaurant, warm ambient lighting, natural laughter, shared plates on table, "
+            "shallow depth of field, social dining atmosphere, documentary style"
+        ),
     }
 
     if section_id not in IMAGE_SECTIONS:

@@ -26,7 +26,7 @@ SECTION_SPECS = [
 
     # 5
     {"order": 5, "id": "location_strategy", "title": "The Location Strategy",
-     "style": "paragraph+bullets+table", "max_words": 500, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None,
+     "style": "paragraph+bullets+table", "max_words": 500, "required_blocks": ["paragraph", "bullets", "table"], "conditional": None, "generate_image": True,
      "prompt_hint": "Reference the city's population, dining scene, and real estate context. Mention specific neighborhood types suited to this concept. Include why this market has an opportunity gap. If market context data is provided, cite demographic and rent figures."},
 
     # 6
@@ -36,7 +36,7 @@ SECTION_SPECS = [
 
     # 7
     {"order": 7, "id": "brand_positioning", "title": "The Brand Positioning",
-     "style": "paragraph+table+bullets", "max_words": 320, "required_blocks": ["paragraph", "table", "bullets"], "conditional": None,
+     "style": "paragraph+table+bullets", "max_words": 320, "required_blocks": ["paragraph", "table", "bullets"], "conditional": None, "generate_image": True,
      "prompt_hint": "Define the brand identity: color palette direction, signage style, packaging. Explain how the brand differentiates from competitors visually and emotionally."},
 
     # 8
@@ -108,7 +108,7 @@ SECTION_SPECS = [
 
     # 14
     {"order": 21, "id": "our_guests", "title": "Our Guests",
-     "style": "paragraph+bullets+callout", "max_words": 300, "required_blocks": ["paragraph", "bullets", "callout"], "conditional": None,
+     "style": "paragraph+bullets+callout", "max_words": 300, "required_blocks": ["paragraph", "bullets", "callout"], "conditional": None, "generate_image": True,
      "prompt_hint": "Define 3-4 guest personas with demographics and dining occasions. Explain how the concept appeals to each. Reference the local market and walk-by traffic potential."},
 
     # 15
