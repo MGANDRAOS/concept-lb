@@ -331,6 +331,7 @@ Expected JSON:
                     concept_description=concept_description,
                     section_id=section_id,
                     section_title=section_title,
+                    concept=concept,
                 )
                 
                 if image_data:
