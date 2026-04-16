@@ -592,5 +592,68 @@ def plan_export_pdf(plan_id: str):
     )
 
 
+@app.route("/plans/<plan_id>/export/financial-pdf", methods=["GET"])
+def plan_export_financial_pdf(plan_id: str):
+    conn = db_conn()
+    try:
+        plan = get_plan(conn, plan_id)
+    finally:
+        conn.close()
+
+    if not plan:
+        return "Plan not found", 404
+
+    plan_data = plan.plan
+    if not plan_data:
+        return "Plan data not available", 400
+
+    # Get normalized concept data
+    concept = plan.normalized_intake
+    if not concept:
+        return "Normalized intake not available for financial model", 400
+
+    # Generate financial model
+    from orchestration.financial_model_generator import generate_financial_model
+    fm = generate_financial_model(concept, plan_data.get("derived_financials"))
+
+    concept_name = (plan_data.get("plan_meta", {}) or {}).get("concept_name", "Restaurant")
+    date_str = ((plan_data.get("plan_meta", {}) or {}).get("created_at", "") or "")[:10]
+
+    # Wrap dicts for Jinja2 dot-notation access
+    fm_wrapped = _DotDict(fm)
+
+    html = render_template(
+        "financial_pdf.html",
+        fm=fm_wrapped,
+        concept_name=concept_name,
+        date=date_str,
+    )
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, wait_until="domcontentloaded", timeout=60000)
+
+        pdf_bytes = page.pdf(
+            format="A4",
+            landscape=True,
+            print_background=True,
+            display_header_footer=True,
+            header_template="<span></span>",
+            footer_template='<div style="width:100%;text-align:center;font-size:9px;color:#999;"><span class="pageNumber"></span></div>',
+            margin={"top": "18mm", "bottom": "22mm", "left": "15mm", "right": "15mm"},
+        )
+        browser.close()
+
+    safe_name = "".join(c for c in (concept_name or "plan") if c.isalnum() or c in " _-").strip() or "plan"
+    filename = f"ConceptLB_{safe_name}_FinancialModel.pdf"
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 if __name__ == "__main__":
     app.run(debug=True)
