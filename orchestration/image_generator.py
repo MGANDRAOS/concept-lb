@@ -1,8 +1,47 @@
-import base64
+from __future__ import annotations
+
 import os
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from openai import OpenAI
+
+from orchestration.image_prompt_composer import compose_image_prompt
+
+
+IMAGE_SECTIONS = {
+    "environment_atmosphere": (
+        "wide-angle interior photograph of the dining room, warm moody lighting, "
+        "shallow depth of field, natural window light mixed with ambient fill"
+    ),
+    "food_program": (
+        "close-up overhead food photography of plated dishes on a textured table, "
+        "shallow depth of field, studio accent lighting, editorial food magazine style"
+    ),
+    "menu_structure": (
+        "lifestyle flat-lay of dishes and fresh ingredients on a tabletop, "
+        "colorful garnishes, natural side lighting, editorial food-magazine composition"
+    ),
+    "service_staffing_model": (
+        "candid photograph of hospitality staff in service, warm ambient lighting, "
+        "documentary-style photography with natural expressions"
+    ),
+    "location_strategy": (
+        "exterior dusk photograph of the restaurant storefront with warm interior "
+        "glow spilling onto the sidewalk, blue-hour sky, street-level perspective"
+    ),
+    "concept_overview": (
+        "hero shot of the full restaurant interior from the entrance looking in, "
+        "dramatic lighting, wide-angle architectural photography"
+    ),
+    "brand_positioning": (
+        "overhead flat-lay of restaurant branding materials on a textured surface, "
+        "soft diffused natural lighting, editorial design-studio composition"
+    ),
+    "our_guests": (
+        "candid lifestyle photograph of guests enjoying food and drinks at the "
+        "restaurant, warm ambient lighting, shallow depth of field, social atmosphere"
+    ),
+}
 
 
 def _get_client() -> OpenAI:
@@ -12,45 +51,40 @@ def _get_client() -> OpenAI:
     return OpenAI(api_key=api_key)
 
 
-def generate_concept_image(
-    *,
-    concept_name: str,
-    concept_description: str,
-    section_title: str,
-    style: str = "modern restaurant interior design",
-) -> tuple[str, str]:
-    """
-    Generate an image for a section using DALL-E 3.
-    
-    Returns:
-        Tuple of (image_url, alt_text)
-    """
-    client = _get_client()
-
-    prompt = (
+def _build_generic_prompt(concept_description: str, framing: str) -> str:
+    """Fallback prompt when the composer is unavailable."""
+    return (
         f"Photorealistic photograph of a restaurant scene. "
         f"Concept: {concept_description}. "
-        f"Visual focus: {style}. "
+        f"Visual focus: {framing}. "
         f"Shot on a Canon EOS R5 with a 35 mm f/1.4 lens, shallow depth of field, "
         f"natural warm ambient lighting mixed with soft directional fill light. "
-        f"Professional architectural and food photography style, magazine editorial quality, "
-        f"8K resolution, hyper-detailed textures and materials. "
-        f"ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO SIGNS, NO LOGOS, NO WATERMARKS, "
-        f"NO TYPOGRAPHY, NO WRITING OF ANY KIND anywhere in the image."
+        f"Professional architectural and food photography style, magazine editorial quality. "
+        f"ABSOLUTELY NO TEXT, NO WORDS, NO LETTERS, NO SIGNS, NO LOGOS, NO WATERMARKS "
+        f"anywhere in the image."
     )
 
-    response = client.images.generate(
-        model="dall-e-3",
-        prompt=prompt,
-        size="1024x1024",
-        quality="hd",
-        n=1,
-    )
 
-    image_url = response.data[0].url
-    alt_text = f"{concept_name} - {section_title}"
-
-    return image_url, alt_text
+def _resolve_prompt(
+    *,
+    concept: Optional[Dict[str, Any]],
+    concept_description: str,
+    section_id: str,
+    section_title: str,
+    framing: str,
+) -> str:
+    """Try the composer; fall back to generic style on any failure."""
+    if concept:
+        try:
+            return compose_image_prompt(
+                concept=concept,
+                section_id=section_id,
+                section_title=section_title,
+                framing=framing,
+            )
+        except Exception as exc:
+            print(f"Warning: prompt composer failed for {section_id}: {exc}. Falling back.")
+    return _build_generic_prompt(concept_description, framing)
 
 
 def generate_section_images(
@@ -59,73 +93,38 @@ def generate_section_images(
     concept_description: str,
     section_id: str,
     section_title: str,
+    concept: Optional[Dict[str, Any]] = None,
 ) -> Optional[tuple[str, str]]:
     """
-    Generate an image for specific sections that benefit from visual representation.
-    Returns None if the section shouldn't have an image.
-    
-    Returns:
-        Tuple of (image_url, alt_text) or None
-    """
-    
-    # Map section IDs to photorealistic photography direction
-    IMAGE_SECTIONS = {
-        "environment_atmosphere": (
-            "wide-angle interior photograph of an upscale dining room with warm moody lighting, "
-            "elegant furniture, textured walls, candle glow on table settings, bokeh background, "
-            "golden-hour window light streaming in"
-        ),
-        "food_program": (
-            "close-up overhead food photography of beautifully plated dishes on a dark slate table, "
-            "fresh ingredients, vibrant colors, steam rising, professional culinary presentation, "
-            "shallow depth of field, studio strobe accent lighting"
-        ),
-        "menu_structure": (
-            "lifestyle flat-lay photograph of artfully arranged dishes and fresh raw ingredients "
-            "on a rustic wooden surface, colorful garnishes, natural side lighting, "
-            "editorial food-magazine composition"
-        ),
-        "service_staffing_model": (
-            "candid photograph of professional hospitality staff in a fine-dining restaurant, "
-            "crisp uniforms, warm ambient lighting, elegant table service in action, "
-            "documentary photography style, natural expressions"
-        ),
-        "location_strategy": (
-            "exterior dusk photograph of a modern restaurant storefront with large glass windows, "
-            "warm interior glow spilling onto the sidewalk, blue-hour sky, street-level perspective, "
-            "architectural photography with leading lines"
-        ),
-        "concept_overview": (
-            "hero shot of the full restaurant interior from the entrance looking in, "
-            "dramatic lighting, open kitchen visible in background, curated decor details, "
-            "wide-angle architectural photography with rich warm tones"
-        ),
-        "brand_positioning": (
-            "overhead flat-lay photograph of restaurant branding materials on a marble surface, "
-            "elegant menu cards, branded takeout packaging, business cards, napkins with logo, "
-            "design studio aesthetic, soft diffused natural lighting, editorial composition"
-        ),
-        "our_guests": (
-            "candid lifestyle photograph of diverse groups of friends enjoying food and drinks "
-            "at a stylish restaurant, warm ambient lighting, natural laughter, shared plates on table, "
-            "shallow depth of field, social dining atmosphere, documentary style"
-        ),
-    }
+    Generate a photorealistic image for a section using DALL-E 3.
 
-    if section_id not in IMAGE_SECTIONS:
+    Returns (image_url, alt_text) or None if this section has no image framing
+    or generation fails.
+    """
+    framing = IMAGE_SECTIONS.get(section_id)
+    if framing is None:
         return None
 
-    style = IMAGE_SECTIONS[section_id]
+    prompt = _resolve_prompt(
+        concept=concept,
+        concept_description=concept_description,
+        section_id=section_id,
+        section_title=section_title,
+        framing=framing,
+    )
 
     try:
-        image_url, alt_text = generate_concept_image(
-            concept_name=concept_name,
-            concept_description=concept_description,
-            section_title=section_title,
-            style=style,
+        client = _get_client()
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="hd",
+            n=1,
         )
+        image_url = response.data[0].url
+        alt_text = f"{concept_name} - {section_title}"
         return image_url, alt_text
-    except Exception as e:
-        # Gracefully handle image generation failures
-        print(f"Warning: Failed to generate image for section {section_id}: {str(e)}")
+    except Exception as exc:
+        print(f"Warning: DALL-E generation failed for {section_id}: {exc}")
         return None
