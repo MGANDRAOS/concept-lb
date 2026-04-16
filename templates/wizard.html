@@ -613,6 +613,17 @@
       operating_days_per_week: 6,
       alcohol_license_status: "not_allowed",
 
+      // --- P2: Financial model anchors ---
+      opening_budget_usd: null,
+      funding_equity_pct: 50,
+      funding_loan_pct: 50,
+      avg_check_morning: null,
+      avg_check_daytime: null,
+      avg_check_evening: null,
+      revenue_growth_pct: 3,
+      ramp_up_months: 4,
+      ramp_start_pct: 60,
+
       // --- sources (confidence) ---
       expected_daily_orders__source: "user_unknown",
       avg_ticket_usd__source: "user_unknown",
@@ -624,6 +635,7 @@
       kitchen_type__source: "user_unknown",
       operating_days_per_week__source: "user_unknown",
       alcohol_license_status__source: "user_unknown",
+      opening_budget_usd__source: "user_unknown",
     };
 
     const OPTIONS = {
@@ -940,6 +952,108 @@
       alc.classList.add("wide");
       alc.appendChild(notSureRow("alcohol_license_status__source"));
       g.appendChild(alc);
+
+      // --- P2: Financial Model Inputs ---
+      const fmHeading = document.createElement("h3");
+      fmHeading.style.cssText = "margin-top:24px; color:var(--accent);";
+      fmHeading.textContent = "Financial Model Inputs (Optional)";
+      g.appendChild(fmHeading);
+
+      const fmDesc = document.createElement("p");
+      fmDesc.style.cssText = "color:var(--muted); font-size:13px; margin-bottom:12px;";
+      fmDesc.textContent = "These fields are used to generate the separate Financial Model PDF. Leave blank for industry defaults.";
+      g.appendChild(fmDesc);
+
+      // Opening budget
+      const budget = field({
+        label: "Opening Budget (USD)",
+        required: false,
+        hint: "Total capital available for opening (fit-out, equipment, working capital).",
+        contentEl: inputNumber("opening_budget_usd", { min: 0 })
+      });
+      budget.classList.add("wide");
+      budget.appendChild(notSureRow("opening_budget_usd__source", ["opening_budget_usd"]));
+      g.appendChild(budget);
+
+      // Funding equity %
+      const equity = field({
+        label: "Funding Equity %",
+        required: false,
+        hint: "Percentage of opening budget funded by equity.",
+        contentEl: inputNumber("funding_equity_pct", { min: 0, max: 100 })
+      });
+      equity.classList.add("wide");
+      g.appendChild(equity);
+
+      // Funding loan %
+      const loan = field({
+        label: "Funding Loan %",
+        required: false,
+        hint: "Percentage of opening budget funded by loan.",
+        contentEl: inputNumber("funding_loan_pct", { min: 0, max: 100 })
+      });
+      loan.classList.add("wide");
+      g.appendChild(loan);
+
+      // Avg check morning
+      const checkMorning = field({
+        label: "Avg Check Morning (USD)",
+        required: false,
+        hint: "Average spend per customer during morning service.",
+        contentEl: inputNumber("avg_check_morning", { min: 0 })
+      });
+      checkMorning.classList.add("wide");
+      g.appendChild(checkMorning);
+
+      // Avg check daytime
+      const checkDay = field({
+        label: "Avg Check Daytime (USD)",
+        required: false,
+        hint: "Average spend per customer during daytime service.",
+        contentEl: inputNumber("avg_check_daytime", { min: 0 })
+      });
+      checkDay.classList.add("wide");
+      g.appendChild(checkDay);
+
+      // Avg check evening
+      const checkEvening = field({
+        label: "Avg Check Evening (USD)",
+        required: false,
+        hint: "Average spend per customer during evening service.",
+        contentEl: inputNumber("avg_check_evening", { min: 0 })
+      });
+      checkEvening.classList.add("wide");
+      g.appendChild(checkEvening);
+
+      // Revenue growth %/year
+      const growth = field({
+        label: "Revenue Growth %/year",
+        required: false,
+        hint: "Annual revenue growth rate assumption (default: 3%).",
+        contentEl: inputNumber("revenue_growth_pct", { min: 0, max: 20 })
+      });
+      growth.classList.add("wide");
+      g.appendChild(growth);
+
+      // Ramp-up months
+      const rampMonths = field({
+        label: "Ramp-Up Months",
+        required: false,
+        hint: "How many months to reach full revenue (default: 4).",
+        contentEl: inputNumber("ramp_up_months", { min: 1, max: 12 })
+      });
+      rampMonths.classList.add("wide");
+      g.appendChild(rampMonths);
+
+      // Ramp start %
+      const rampStart = field({
+        label: "Ramp Start %",
+        required: false,
+        hint: "Revenue percentage at month 1 of ramp-up (default: 60%).",
+        contentEl: inputNumber("ramp_start_pct", { min: 10, max: 100 })
+      });
+      rampStart.classList.add("wide");
+      g.appendChild(rampStart);
 
       return g;
     }
