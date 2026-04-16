@@ -21,7 +21,7 @@
 
 {% elif block.get("type") == "image" %}
   <figure class="plan-image">
-    <img src="{{ block.get('src', '') }}" alt="{{ block.get('alt', '') }}" />
+    <img src="{{ block.get('url', block.get('src', '')) }}" alt="{{ block.get('alt_text', block.get('alt', '')) }}" />
     {% if block.get("caption") %}
       <figcaption>{{ block.get("caption") }}</figcaption>
     {% endif %}

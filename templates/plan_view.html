@@ -176,7 +176,7 @@
       {% if plan.derived_financials %}
       <div class="feasibility-metrics">
         <div><strong>Monthly Revenue (USD):</strong> {{ plan.derived_financials.outputs.monthly_revenue_usd if
-          plan.derived_financials and plan.derived_financials.outputs else "—" }</div>
+          plan.derived_financials and plan.derived_financials.outputs else "—" }}</div>
         <div><strong>Break-even Orders/Day:</strong> {{ plan.derived_financials.outputs.breakeven_orders_per_day if
           plan.derived_financials and plan.derived_financials.outputs else "—" }}</div>
       </div>

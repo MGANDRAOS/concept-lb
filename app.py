@@ -42,19 +42,21 @@ def db_conn():
     return connect(DB_PATH)
 
 
-class _DotDict:
-    """Wrap a dict for Jinja2 dot-notation attribute access."""
+class _DotDict(dict):
+    """Wrap a dict for Jinja2 — supports both dot-notation and dict access (.get, [key])."""
     def __init__(self, d):
+        super().__init__(d or {})
         for k, v in (d or {}).items():
             if isinstance(v, dict):
-                setattr(self, k, _DotDict(v))
+                self[k] = _DotDict(v)
             elif isinstance(v, list):
-                setattr(self, k, [_DotDict(i) if isinstance(i, dict) else i for i in v])
-            else:
-                setattr(self, k, v)
+                self[k] = [_DotDict(i) if isinstance(i, dict) else i for i in v]
 
     def __getattr__(self, name):
-        return None
+        try:
+            return self[name]
+        except KeyError:
+            return None
 
 
 # --- Jobs memory store (existing) ---
@@ -363,7 +365,18 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 "derived_financials": concept.get("derived_financials"),
             }
 
-            validated = FinalPlan.model_validate(final_plan).model_dump()
+            try:
+                validated = FinalPlan.model_validate(final_plan).model_dump()
+            except Exception as val_err:
+                # Log detailed validation error for debugging
+                import traceback
+                print(f"FinalPlan validation failed: {val_err}")
+                print(f"Sections count: {len(sections)}")
+                for i, sec in enumerate(sections):
+                    block_types = [b.get('type', '?') for b in sec.get('blocks', [])]
+                    print(f"  Section {i}: id={sec.get('id')}, blocks={block_types}")
+                traceback.print_exc()
+                raise
 
             # Render HTML snapshot and persist the plan
             plan_html = render_template("plan_view.html", plan=validated)
@@ -384,7 +397,11 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             _job_update(job_id, percent=100, message="Done ✅", log="Done ✅")
 
         except Exception as e:
-            err = str(e)
+            import traceback, io
+            buf = io.StringIO()
+            traceback.print_exc(file=buf)
+            full_tb = buf.getvalue()
+            err = f"{type(e).__name__}: {e}\n\nTRACEBACK:\n{full_tb}"
             # Persist failure record too (intake + normalized if available)
             try:
                 _persist_plan_record(
