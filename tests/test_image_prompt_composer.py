@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from orchestration.image_prompt_composer import compose_image_prompt
+from orchestration.image_prompt_composer import _concept_brief, compose_image_prompt
 
 
 SECTION_FRAMING = {
@@ -71,3 +71,47 @@ def test_compose_raises_on_empty_prompt(fake_concept):
                 section_title="The Food Program",
                 framing=SECTION_FRAMING["food_program"],
             )
+
+
+def test_concept_brief_handles_alcohol_flag_true():
+    brief = _concept_brief({"alcohol_flag": True})
+    assert "Alcohol: yes" in brief
+
+
+def test_concept_brief_handles_alcohol_flag_false_and_missing():
+    brief_false = _concept_brief({"alcohol_flag": False})
+    brief_missing = _concept_brief({})
+    assert "Alcohol: no" in brief_false
+    assert "Alcohol: no" in brief_missing
+
+
+def test_concept_brief_joins_list_field_with_comma_space():
+    brief = _concept_brief({
+        "target_audience": ["students", "tourists", "locals"],
+    })
+    assert "Target audience: students, tourists, locals" in brief
+
+
+def test_concept_brief_renders_unspecified_for_missing_list():
+    brief = _concept_brief({})
+    assert "Target audience: unspecified" in brief
+
+
+def test_concept_brief_handles_explicit_none_scalar():
+    """Key present but value None — the fix for the flagged bug."""
+    brief = _concept_brief({
+        "concept_name": None,
+        "cuisine_type": None,
+        "neighborhood_type": None,
+        "service_model": None,
+        "price_positioning": None,
+        "beverage_direction": None,
+    })
+    # None should not leak into the brief as the literal string "None"
+    assert "None" not in brief
+    assert "Concept name: unnamed" in brief
+    assert "Cuisine: unspecified" in brief
+    assert "Neighborhood type: unspecified" in brief
+    assert "Service model: unspecified" in brief
+    assert "Price positioning: unspecified" in brief
+    assert "Beverage direction: unspecified" in brief

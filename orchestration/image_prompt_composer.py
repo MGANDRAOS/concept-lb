@@ -24,17 +24,17 @@ def _concept_brief(concept: Dict[str, Any]) -> str:
         return str(value) or "unspecified"
 
     return (
-        f"Concept name: {concept.get('concept_name', 'unnamed')}\n"
-        f"Cuisine: {concept.get('cuisine_type', 'unspecified')}\n"
-        f"One-liner: {concept.get('one_liner', '')}\n"
-        f"Location: {concept.get('city', '')}, {concept.get('country', '')}\n"
-        f"Neighborhood type: {concept.get('neighborhood_type', 'unspecified')}\n"
-        f"Service model: {concept.get('service_model', 'unspecified')}\n"
-        f"Price positioning: {concept.get('price_positioning', 'unspecified')}\n"
+        f"Concept name: {concept.get('concept_name') or 'unnamed'}\n"
+        f"Cuisine: {concept.get('cuisine_type') or 'unspecified'}\n"
+        f"One-liner: {concept.get('one_liner') or ''}\n"
+        f"Location: {concept.get('city') or ''}, {concept.get('country') or ''}\n"
+        f"Neighborhood type: {concept.get('neighborhood_type') or 'unspecified'}\n"
+        f"Service model: {concept.get('service_model') or 'unspecified'}\n"
+        f"Price positioning: {concept.get('price_positioning') or 'unspecified'}\n"
         f"Target audience: {_join('target_audience')}\n"
         f"Brand personality: {_join('brand_personality_keywords')}\n"
         f"Interior mood: {_join('interior_mood_keywords')}\n"
-        f"Beverage direction: {concept.get('beverage_direction', 'unspecified')}\n"
+        f"Beverage direction: {concept.get('beverage_direction') or 'unspecified'}\n"
         f"Alcohol: {'yes' if concept.get('alcohol_flag') else 'no'}"
     )
 
