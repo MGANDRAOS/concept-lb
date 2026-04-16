@@ -18,6 +18,7 @@ from orchestration.financials_engine import compute_derived_financials
 from orchestration.normalization import normalize_intake
 from orchestration.section_specs import SECTION_SPECS, should_include_section
 from orchestration.section_bundle_generator import generate_sections_bundle
+from orchestration.facts_generator import generate_facts
 from schemas.plan_schema import FinalPlan
 from orchestration.risk_engine import evaluate_risk
 
@@ -282,6 +283,28 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             normalized = normalize_intake(intake)
             concept = normalized["concept"]
 
+            # Stash concept_name early so the job_status page can show it.
+            with JOBS_LOCK:
+                if job_id in JOBS:
+                    JOBS[job_id]["concept_name"] = concept.get("concept_name") or ""
+
+            # Kick off facts generation on a background thread. Failure must NOT
+            # break plan generation — degrade to no facts silently.
+            def _facts_worker(jid: str, concept_snapshot: Dict[str, Any]):
+                try:
+                    result = generate_facts(concept_snapshot)
+                    with JOBS_LOCK:
+                        if jid in JOBS:
+                            JOBS[jid]["facts"] = result
+                except Exception as fexc:
+                    print(f"Warning: facts generation failed: {fexc}")
+
+            threading.Thread(
+                target=_facts_worker,
+                args=(job_id, dict(concept)),
+                daemon=True,
+            ).start()
+
             concept["derived_financials"] = compute_derived_financials(concept)
 
             concept["risk_report"] = evaluate_risk(
@@ -466,6 +489,9 @@ def generate_job():
             "error": None,
             "plan_id": None,
             "model": model_name,
+            "concept_name": "",
+            "facts": None,
+            "facts_sent": False,
         }
 
     t = threading.Thread(
@@ -480,7 +506,12 @@ def generate_job():
 
 @app.route("/jobs/<job_id>", methods=["GET"])
 def job_page(job_id: str):
-    return render_template("job_status.html", job_id=job_id)
+    concept_name = ""
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+        if job:
+            concept_name = job.get("concept_name") or ""
+    return render_template("job_status.html", job_id=job_id, concept_name=concept_name)
 
 
 @app.route("/jobs/<job_id>/view", methods=["GET"])
@@ -508,6 +539,7 @@ def job_events(job_id: str):
         last_log_index = 0
 
         while True:
+            facts_event_payload = None
             with JOBS_LOCK:
                 job = JOBS.get(job_id)
                 if not job:
@@ -523,17 +555,37 @@ def job_events(job_id: str):
                     "message": job["message"],
                     "log": ("\n".join(new_logs) if new_logs else None),
                 }
-                yield f"event: progress\ndata: {json.dumps(payload)}\n\n"
 
-                if job["status"] == "done":
-                    done_payload = {"view_url": f"/jobs/{job_id}/view", "plan_id": job.get("plan_id"), "token_usage": job.get("token_usage")}
-                    yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
-                    return
+                # One-shot facts emission when facts first become available.
+                facts = job.get("facts")
+                if facts and not job.get("facts_sent"):
+                    facts_event_payload = {"facts": facts}
+                    job["facts_sent"] = True
 
-                if job["status"] == "error":
+                status = job["status"]
+                done_payload = None
+                err_payload = None
+                if status == "done":
+                    done_payload = {
+                        "view_url": f"/jobs/{job_id}/view",
+                        "plan_id": job.get("plan_id"),
+                        "token_usage": job.get("token_usage"),
+                    }
+                elif status == "error":
                     err_payload = {"error": job.get("error") or "Unknown error"}
-                    yield f"event: job_error\ndata: {json.dumps(err_payload)}\n\n"
-                    return
+
+            yield f"event: progress\ndata: {json.dumps(payload)}\n\n"
+
+            if facts_event_payload is not None:
+                yield f"event: facts\ndata: {json.dumps(facts_event_payload)}\n\n"
+
+            if done_payload is not None:
+                yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+                return
+
+            if err_payload is not None:
+                yield f"event: job_error\ndata: {json.dumps(err_payload)}\n\n"
+                return
 
             time.sleep(0.5)
 
