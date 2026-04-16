@@ -268,6 +268,9 @@ def _persist_plan_record(
 def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers: int, model_name: str = "gpt-5.2"):
     with app.app_context():
         try:
+            from orchestration.openai_client import start_tracking
+            tracker = start_tracking()
+
             _job_update(job_id, percent=2, message="Normalizing intake…", log="Normalizing intake…")
             normalized = normalize_intake(intake)
             concept = normalized["concept"]
@@ -389,10 +392,16 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 status="complete",
             )
 
+            # Capture token usage
+            usage_summary = tracker.summary()
+            cost_summary = tracker.cost(model_name)
+            token_info = {**usage_summary, **cost_summary}
+
             with JOBS_LOCK:
                 JOBS[job_id]["status"] = "done"
                 JOBS[job_id]["plan"] = validated
                 JOBS[job_id]["plan_id"] = plan_id
+                JOBS[job_id]["token_usage"] = token_info
 
             _job_update(job_id, percent=100, message="Done ✅", log="Done ✅")
 
@@ -509,7 +518,7 @@ def job_events(job_id: str):
                 yield f"event: progress\ndata: {json.dumps(payload)}\n\n"
 
                 if job["status"] == "done":
-                    done_payload = {"view_url": f"/jobs/{job_id}/view", "plan_id": job.get("plan_id")}
+                    done_payload = {"view_url": f"/jobs/{job_id}/view", "plan_id": job.get("plan_id"), "token_usage": job.get("token_usage")}
                     yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
                     return
 

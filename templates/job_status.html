@@ -96,11 +96,29 @@
       es.close();
       setProgress(100, "Done ✅");
 
+      // Show token usage
+      const tu = data.token_usage;
+      if (tu) {
+        const box = document.createElement("div");
+        box.style.cssText = "margin-top:16px; padding:16px; border-radius:12px; border:1px solid var(--border); background:var(--surface);";
+        box.innerHTML = `
+          <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:var(--accent);">Token Usage & Cost</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:13px;">
+            <div><span style="color:var(--dim);">Input</span><br><strong>${(tu.input_tokens || 0).toLocaleString()}</strong> tokens<br><span style="color:var(--dim);">$${(tu.input_cost_usd || 0).toFixed(4)}</span></div>
+            <div><span style="color:var(--dim);">Output</span><br><strong>${(tu.output_tokens || 0).toLocaleString()}</strong> tokens<br><span style="color:var(--dim);">$${(tu.output_cost_usd || 0).toFixed(4)}</span></div>
+            <div><span style="color:var(--dim);">Total</span><br><strong>${(tu.total_tokens || 0).toLocaleString()}</strong> tokens<br><strong style="color:var(--accent);">$${(tu.total_cost_usd || 0).toFixed(4)}</strong></div>
+          </div>
+          <div style="margin-top:8px; font-size:12px; color:var(--dim);">${tu.api_calls || 0} API calls &bull; Model: ${tu.model || '?'}</div>
+        `;
+        document.querySelector(".card-body").appendChild(box);
+      }
+
       const viewUrl = data.view_url || `/jobs/${jobId}/view`;
       viewBtn.href = viewUrl;
       doneRow.style.display = "block";
 
-      setTimeout(() => { window.location.href = viewUrl; }, 600);
+      // Longer delay so user can see the token stats
+      setTimeout(() => { window.location.href = viewUrl; }, tu ? 5000 : 600);
     });
 
     es.addEventListener("error", (ev) => {
