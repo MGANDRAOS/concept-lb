@@ -58,6 +58,19 @@
       </table>
     </div>
 
+  {% elif block.get("type") == "menu_items" %}
+  <div class="menu-category">
+    {% if block.get("category") %}
+      <h3 style="text-transform:uppercase; font-size:14px; letter-spacing:1px; margin:16px 0 10px; color:var(--accent);">{{ block.get("category") }}</h3>
+    {% endif %}
+    {% for item in block.get("items", []) %}
+      <div style="margin:8px 0;">
+        <strong style="text-transform:uppercase;">{{ item.get("name", "") }}</strong><br>
+        <span style="color:var(--muted); font-size:13px;">{{ item.get("description", "") }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
   {% else %}
     <pre class="unknown">{{ block }}</pre>
   {% endif %}
