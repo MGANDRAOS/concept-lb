@@ -1,48 +1,67 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Generating… — Concept LB</title>
-  <style>
-    body { margin:0; font-family: system-ui, Arial; background:#0b0f14; color:#e8eef6; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 18px; }
-    .card { background:#111823; border:1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
-    h1 { margin: 0 0 10px; font-size: 22px; }
-    .bar { height: 12px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow:hidden; }
-    .fill { height: 100%; width: 0%; background:#7aa2ff; transition: width .2s ease; }
-    .row { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top: 12px; flex-wrap:wrap; }
-    .hint { color:#a9b4c3; font-size: 13px; }
-    .status { font-size: 15px; margin-top: 10px; }
-    .log { margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px;
-           background:#0f1520; border:1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px; max-height: 260px; overflow:auto; white-space: pre-wrap; }
-    .btn { display:inline-block; background:#7aa2ff; color:#0b0f14; padding:10px 14px; border-radius: 12px; font-weight:700; text-decoration:none; }
-    .err { color:#ffb4b4; margin-top: 10px; white-space: pre-wrap; }
-  </style>
+  <link rel="stylesheet" href="/admin.css" />
+  <script>
+    (function() {
+      if (localStorage.getItem('conceptlb_theme') === 'light') document.documentElement.classList.add('light');
+    })();
+  </script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Generating…</h1>
-      <div class="bar"><div class="fill" id="fill"></div></div>
-
-      <div class="row">
-        <div class="hint">Job: {{ job_id }}</div>
-        <div class="hint" id="pct">0%</div>
+  <div class="wrap" style="max-width:720px;">
+    <div class="topbar" style="margin-bottom:16px;">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1 style="margin:0;">Generating your plan…</h1>
+          <div class="sub">This usually takes 2–4 minutes</div>
+        </div>
       </div>
+      <button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
+    </div>
 
-      <div class="status" id="statusText">Starting…</div>
-      <div class="log" id="log"></div>
-      <div class="err" id="err"></div>
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="font-size:16px; font-weight:600;" id="statusText">Starting…</div>
+          <div class="pill" id="pct">0%</div>
+        </div>
 
-      <div class="row" id="doneRow" style="display:none;">
-        <a class="btn" id="viewBtn" href="#">View Plan</a>
-        <a class="hint" href="/">Back</a>
+        <div class="job-bar">
+          <div class="job-fill" id="fill" style="width:0%;"></div>
+        </div>
+
+        <div class="text-muted text-small" style="margin-top:10px;">Job: {{ job_id }}</div>
+
+        <div class="job-log" id="log"></div>
+        <div class="job-error" id="err"></div>
+
+        <div id="doneRow" style="display:none; margin-top:16px; display:none;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <a class="btn btn-primary" id="viewBtn" href="#">View Plan</a>
+            <a class="btn btn-secondary" href="/wizard">New Plan</a>
+            <a class="text-muted" href="/plans" style="text-decoration:none;">All Plans</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isLight = html.classList.toggle('light');
+      localStorage.setItem('conceptlb_theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+    }
+    if (localStorage.getItem('conceptlb_theme') === 'light') {
+      document.getElementById('themeBtn').textContent = '☀️';
+    }
+
     const jobId = "{{ job_id }}";
     const fill = document.getElementById("fill");
     const pct = document.getElementById("pct");
@@ -79,14 +98,13 @@
 
       const viewUrl = data.view_url || `/jobs/${jobId}/view`;
       viewBtn.href = viewUrl;
-      doneRow.style.display = "flex";
+      doneRow.style.display = "block";
 
-      // auto-redirect after a short beat
       setTimeout(() => { window.location.href = viewUrl; }, 600);
     });
 
     es.addEventListener("error", (ev) => {
-      // browser also fires "error" for reconnects; we handle explicit job errors via event "job_error"
+      // browser reconnect events — ignore
     });
 
     es.addEventListener("job_error", (ev) => {
@@ -94,7 +112,7 @@
       es.close();
       errEl.textContent = data.error || "Unknown error";
       statusText.textContent = "Failed ❌";
-      doneRow.style.display = "flex";
+      doneRow.style.display = "block";
       viewBtn.style.display = "none";
     });
   </script>

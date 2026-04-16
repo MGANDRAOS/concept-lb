@@ -1,128 +1,103 @@
 {# templates/plans_list.html #}
 <!doctype html>
-<html>
-
+<html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Plans — Concept LB</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 24px;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-
-    th,
-    td {
-      border-bottom: 1px solid #eee;
-      padding: 10px 8px;
-      text-align: left;
-    }
-
-    th {
-      background: #fafafa;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      border: 1px solid #ddd;
-    }
-
-    .rowlink {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .muted {
-      color: #666;
-      font-size: 13px;
-    }
-
-    .topbar {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    input {
-      padding: 8px;
-      width: 280px;
-    }
-
-    select {
-      padding: 8px;
-    }
-
-    button {
-      padding: 8px 10px;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="stylesheet" href="/admin.css" />
+  <script>
+    (function() {
+      if (localStorage.getItem('conceptlb_theme') === 'light') document.documentElement.classList.add('light');
+    })();
+  </script>
 </head>
-
 <body>
-  <div class="topbar">
-    <h2 style="margin:0;">Plans</h2>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Plans</h1>
+          <div class="sub">All generated concept plans</div>
+        </div>
+      </div>
 
-      <form method="GET" action="/plans" style="margin-left:auto; display:flex; gap:8px;">
-        <input name="q" placeholder="Search by title or id" value="{{ q or '' }}" />
-        <select name="status">
-          <option value="">All</option>
-          <option value="complete" {% if status=='complete' %}selected{% endif %}>complete</option>
-          <option value="failed" {% if status=='failed' %}selected{% endif %}>failed</option>
-          <option value="draft" {% if status=='draft' %}selected{% endif %}>draft</option>
-        </select>
-        <button type="submit">Filter</button>
-      </form>
-          <a href="/wizard" style="
-        margin-left:16px;
-        padding:8px 12px;
-        border:1px solid #111;
-        border-radius:8px;
-        text-decoration:none;
-        font-weight:600;
-        color:#111;
-     ">
-      Generate </a>
+      <div class="topbar-actions">
+        <form method="GET" action="/plans" style="display:flex; gap:8px; align-items:center;">
+          <input name="q" placeholder="Search by title or ID…" value="{{ q or '' }}" style="width:220px;" />
+          <select name="status">
+            <option value="">All statuses</option>
+            <option value="complete" {% if status=='complete' %}selected{% endif %}>Complete</option>
+            <option value="failed" {% if status=='failed' %}selected{% endif %}>Failed</option>
+            <option value="draft" {% if status=='draft' %}selected{% endif %}>Draft</option>
+          </select>
+          <button type="submit" class="btn btn-secondary">Filter</button>
+        </form>
+        <a href="/wizard" class="btn btn-primary">+ New Plan</a>
+        <button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>ID</th>
+            <th>Export</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in plans %}
+          <tr>
+            <td>
+              <a href="/plans/{{ p.id }}">
+                <strong>{{ p.title or ("Plan " ~ p.created_at) }}</strong>
+              </a>
+              <div class="text-muted text-small">{{ p.locale or '' }} {{ p.mode or '' }} {{ p.model or '' }}</div>
+            </td>
+            <td>
+              <span class="badge {% if p.status == 'complete' %}badge-complete{% elif p.status == 'failed' %}badge-failed{% endif %}">
+                {{ p.status }}
+              </span>
+            </td>
+            <td class="text-muted text-small">{{ p.created_at }}</td>
+            <td class="text-muted text-small">{{ p.id[:12] }}…</td>
+            <td>
+              {% if p.status == 'complete' %}
+                <a href="/plans/{{ p.id }}/export/pdf" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;">PDF</a>
+                <a href="/plans/{{ p.id }}/export/financial-pdf" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;">Financial</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% if not plans %}
+          <tr>
+            <td colspan="5" style="text-align:center; padding:40px; color:var(--muted);">
+              No plans found. <a href="/wizard">Create your first plan</a>.
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <p class="muted">Click any row to view the plan.</p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th>Status</th>
-        <th>Created</th>
-        <th>ID</th>
-        <th>Export</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in plans %}
-      <tr>
-        <td>
-          <a class="rowlink" href="/plans/{{ p.id }}">
-            <strong>{{ p.title or ("Plan " ~ p.created_at) }}</strong>
-          </a>
-          <div class="muted">{{ p.locale or '' }} {{ p.mode or '' }} {{ p.model or '' }}</div>
-        </td>
-        <td><span class="badge">{{ p.status }}</span></td>
-        <td>{{ p.created_at }}</td>
-        <td class="muted">{{ p.id }}</td>
-        <td><a href="/plans/{{ p.id }}/export/pdf">PDF</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isLight = html.classList.toggle('light');
+      localStorage.setItem('conceptlb_theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+    }
+    // Restore theme icon
+    if (localStorage.getItem('conceptlb_theme') === 'light') {
+      document.getElementById('themeBtn').textContent = '☀️';
+    }
+  </script>
 </body>
-
 </html>

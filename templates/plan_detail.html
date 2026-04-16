@@ -1,39 +1,51 @@
 {# templates/plan_detail.html #}
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>{{ plan.title or plan.id }} — Concept LB</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 24px; }
-      .top { display:flex; align-items:center; gap:12px; }
-      .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border:1px solid #ddd; }
-      .actions { margin-left:auto; display:flex; gap:10px; }
-      .btn { padding:8px 10px; border:1px solid #ddd; border-radius:8px; text-decoration:none; color:#111; }
-      pre { background:#fafafa; padding:12px; border:1px solid #eee; overflow:auto; }
-      .tabs { display:flex; gap:8px; margin:16px 0; }
-      .tab { padding:8px 10px; border:1px solid #ddd; border-radius: 999px; cursor:pointer; user-select:none; }
-      .tab.active { background:#111; color:#fff; border-color:#111; }
-      .panel { display:none; }
-      .panel.active { display:block; }
-      iframe { width: 100%; height: 80vh; border:1px solid #eee; }
-    </style>
-  </head>
-  <body>
-    <div class="top">
-      <a href="/plans">← Plans</a>
-      <h2 style="margin:0;">{{ plan.title or plan.id }}</h2>
-      <span class="badge">{{ plan.status }}</span>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ plan.title or plan.id }} — Concept LB</title>
+  <link rel="stylesheet" href="/admin.css" />
+  <style>
+    iframe { width: 100%; height: 80vh; border: 1px solid var(--stroke); border-radius: 12px; background: var(--panel2); }
+    pre { background: var(--panel2); border: 1px solid var(--stroke); border-radius: 12px; padding: 16px; overflow: auto; max-height: 70vh; font-size: 13px; line-height: 1.6; }
+  </style>
+  <script>
+    (function() {
+      if (localStorage.getItem('conceptlb_theme') === 'light') document.documentElement.classList.add('light');
+    })();
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <a href="/plans" class="btn-ghost" style="text-decoration:none; padding:8px 12px; border-radius:10px; border:1px solid var(--stroke);">← Plans</a>
+        <div>
+          <h1 style="margin:0;">{{ plan.title or plan.id }}</h1>
+          <div class="sub">
+            Created {{ plan.created_at }} &bull; {{ plan.model or "" }} &bull; {{ plan.locale or "" }}
+          </div>
+        </div>
+        <span class="badge {% if plan.status == 'complete' %}badge-complete{% elif plan.status == 'failed' %}badge-failed{% endif %}" style="margin-left:8px;">
+          {{ plan.status }}
+        </span>
+      </div>
 
-      <div class="actions">
-        <a class="btn" href="/plans/{{ plan.id }}/export/pdf">Export PDF</a>
-        <a href="/plans/{{ plan.id }}/export/financial-pdf" class="btn" style="margin-left:8px;">Download Financial Model PDF</a>
+      <div class="topbar-actions">
+        {% if plan.status == 'complete' %}
+          <a class="btn btn-primary" href="/plans/{{ plan.id }}/export/pdf">Download Business Plan PDF</a>
+          <a class="btn btn-secondary" href="/plans/{{ plan.id }}/export/financial-pdf">Download Financial Model PDF</a>
+        {% endif %}
+        <button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
       </div>
     </div>
 
-    <p style="color:#666;">
-      Created: {{ plan.created_at }} • Updated: {{ plan.updated_at }} • Model: {{ plan.model or "" }} • Locale: {{ plan.locale or "" }}
-    </p>
+    {% if plan.error_message %}
+    <div class="warn-box" style="display:block; margin-bottom:16px;">
+      {{ plan.error_message[:500] }}
+    </div>
+    {% endif %}
 
     <div class="tabs">
       <div class="tab active" data-tab="html">HTML Preview</div>
@@ -42,45 +54,57 @@
       <div class="tab" data-tab="normalized">Normalized Intake</div>
     </div>
 
-    <div id="panel-html" class="panel active">
+    <div id="panel-html" class="panel-tab active">
       {% if plan.plan_html %}
         <iframe srcdoc="{{ plan.plan_html | e }}"></iframe>
       {% else %}
-        <p>No cached HTML for this plan.</p>
+        <div class="card" style="padding:40px; text-align:center; color:var(--muted);">
+          No cached HTML for this plan.
+        </div>
       {% endif %}
     </div>
 
-    <div id="panel-planjson" class="panel">
+    <div id="panel-planjson" class="panel-tab">
       <pre>{{ (plan.plan or {}) | tojson(indent=2) }}</pre>
     </div>
 
-    <div id="panel-intake" class="panel">
+    <div id="panel-intake" class="panel-tab">
       <pre>{{ (plan.intake or {}) | tojson(indent=2) }}</pre>
     </div>
 
-    <div id="panel-normalized" class="panel">
+    <div id="panel-normalized" class="panel-tab">
       <pre>{{ (plan.normalized_intake or {}) | tojson(indent=2) }}</pre>
     </div>
+  </div>
 
-    <script>
-      const tabs = document.querySelectorAll(".tab");
-      const panels = {
-        html: document.getElementById("panel-html"),
-        planjson: document.getElementById("panel-planjson"),
-        intake: document.getElementById("panel-intake"),
-        normalized: document.getElementById("panel-normalized"),
-      };
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isLight = html.classList.toggle('light');
+      localStorage.setItem('conceptlb_theme', isLight ? 'light' : 'dark');
+      document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+    }
+    if (localStorage.getItem('conceptlb_theme') === 'light') {
+      document.getElementById('themeBtn').textContent = '☀️';
+    }
 
-      tabs.forEach(t => {
-        t.addEventListener("click", () => {
-          tabs.forEach(x => x.classList.remove("active"));
-          Object.values(panels).forEach(p => p.classList.remove("active"));
+    // Tabs
+    const tabs = document.querySelectorAll(".tab");
+    const panels = {
+      html: document.getElementById("panel-html"),
+      planjson: document.getElementById("panel-planjson"),
+      intake: document.getElementById("panel-intake"),
+      normalized: document.getElementById("panel-normalized"),
+    };
 
-          t.classList.add("active");
-          const key = t.getAttribute("data-tab");
-          panels[key].classList.add("active");
-        });
+    tabs.forEach(t => {
+      t.addEventListener("click", () => {
+        tabs.forEach(x => x.classList.remove("active"));
+        Object.values(panels).forEach(p => p.classList.remove("active"));
+        t.classList.add("active");
+        panels[t.getAttribute("data-tab")].classList.add("active");
       });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
