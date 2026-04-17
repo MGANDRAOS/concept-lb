@@ -115,7 +115,7 @@
         </a>
         <div class="chrome-title">
           <h1>{{ plan.title or plan.id }}</h1>
-          <div class="meta">{{ plan.created_at[:16] if plan.created_at else '' }} &bull; {{ plan.model or "" }}</div>
+          <div class="meta">{{ plan.created_at | pretty_datetime }} &bull; {{ plan.model or "" }}</div>
         </div>
         <span class="badge {% if plan.status == 'complete' %}badge-complete{% elif plan.status == 'failed' %}badge-failed{% else %}badge-draft{% endif %}">
           {{ plan.status }}

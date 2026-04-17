@@ -77,6 +77,21 @@ def _chunk_list(items, chunk_size: int):
         yield items[i : i + chunk_size]
 
 
+@app.template_filter("pretty_datetime")
+def _pretty_datetime_filter(value: Any) -> str:
+    """Render an ISO-8601 timestamp as 'Apr 17, 2026 · 04:38' for the UI."""
+    if not value:
+        return ""
+    try:
+        s = str(value).strip()
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        dt = datetime.fromisoformat(s)
+    except Exception:
+        return str(value)
+    return dt.strftime("%b %d, %Y · %H:%M")
+
+
 def _cell_to_str(v: Any) -> str:
     """Coerce a table-cell-like value to a string for schema validation.
 
