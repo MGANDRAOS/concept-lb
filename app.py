@@ -468,7 +468,19 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             traceback.print_exc(file=buf)
             full_tb = buf.getvalue()
             err = f"{type(e).__name__}: {e}\n\nTRACEBACK:\n{full_tb}"
-            # Persist failure record too (intake + normalized if available)
+
+            # If the user asked to cancel, honour that intent: don't leave a
+            # "failed" record in the DB. Treat it as a clean cancellation.
+            with JOBS_LOCK:
+                was_cancelled = bool((JOBS.get(job_id) or {}).get("cancel_requested"))
+            if was_cancelled:
+                with JOBS_LOCK:
+                    if job_id in JOBS:
+                        JOBS[job_id]["status"] = "cancelled"
+                _job_update(job_id, message="Cancelled", log="Cancelled by user")
+                return
+
+            # Persist failure record (intake + normalized if available)
             try:
                 _persist_plan_record(
                     job_id=job_id,

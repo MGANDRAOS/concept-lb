@@ -248,6 +248,34 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
         if exp_norm in exp_map:
             concept_out["experience_level"] = exp_map[exp_norm]
 
+    # alcohol_license_status: coerce LLM-invented variants to schema values or None.
+    als = concept_out.get("alcohol_license_status")
+    if isinstance(als, str):
+        als_norm = als.strip().lower().replace(" ", "_").replace("-", "_")
+        als_map = {
+            "confirmed": "confirmed",
+            "have": "confirmed",
+            "licensed": "confirmed",
+            "approved": "confirmed",
+
+            "applying": "applying",
+            "pending": "applying",
+            "in_progress": "applying",
+            "in_process": "applying",
+
+            "not_allowed": "not_allowed",
+            "prohibited": "not_allowed",
+            "forbidden": "not_allowed",
+            "restricted": "not_allowed",
+        }
+        if als_norm in als_map:
+            concept_out["alcohol_license_status"] = als_map[als_norm]
+        else:
+            # Unknown / "not_applicable" / "n/a" / empty — treat as unspecified.
+            concept_out["alcohol_license_status"] = None
+    elif als is not None and not isinstance(als, str):
+        concept_out["alcohol_license_status"] = None
+
 
     # --- Pass-through: NEVER let the model drop wizard-provided anchors ---
     intake_concept = intake.get("concept", {}) if isinstance(intake.get("concept"), dict) else {}
