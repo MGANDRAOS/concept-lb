@@ -240,6 +240,35 @@
       text-align: left;
     }
 
+    /* cancel button — subtle, top-right */
+    .cancel-btn {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--ink-dim);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .cancel-btn:hover:not(:disabled) {
+      border-color: rgba(224, 108, 117, 0.4);
+      color: var(--err);
+    }
+    .cancel-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .cancel-btn.hidden { display: none; }
+
     /* mobile */
     @media (max-width: 720px) {
       html, body { overflow-y: auto; }
@@ -248,11 +277,14 @@
       .status-line { font-size: 18px; }
       .fact-text { font-size: 20px; }
       .progress-row { width: 100%; }
+      .cancel-btn { top: 12px; right: 12px; padding: 6px 10px; font-size: 10px; }
     }
   </style>
 </head>
 <body>
   <div class="particles" aria-hidden="true"></div>
+
+  <button type="button" class="cancel-btn" id="cancelBtn" title="Cancel generation">× Cancel</button>
 
   <section class="progress-region">
     <div class="concept-name" id="conceptName">Concept LB</div>
@@ -299,6 +331,7 @@
     const factText = document.getElementById("factText");
     const factTimer = document.getElementById("factTimer");
     const factTimerBar = document.getElementById("factTimerBar");
+    const cancelBtn = document.getElementById("cancelBtn");
 
     // Start with the card faded in so the placeholder is visible.
     requestAnimationFrame(() => factCard.classList.add("visible"));
@@ -352,6 +385,22 @@
       }
     }
 
+    function hideCancelBtn() { cancelBtn.classList.add("hidden"); }
+
+    // --- Cancel handler ---
+    cancelBtn.addEventListener("click", async () => {
+      if (cancelBtn.disabled) return;
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = "Cancelling…";
+      statusText.textContent = "Cancelling…";
+      try {
+        await fetch(`/api/jobs/${jobId}/cancel`, { method: "POST" });
+      } catch (_) {
+        // Server-side cancel signal may still have landed; we rely on the
+        // cancelled SSE event for the authoritative UI transition.
+      }
+    });
+
     // --- SSE ---
     const es = new EventSource(`/api/jobs/${jobId}/events`);
 
@@ -373,12 +422,29 @@
       } catch (_) { /* ignore */ }
     });
 
+    es.addEventListener("cancelled", (ev) => {
+      try {
+        es.close();
+      } catch (_) { /* ignore */ }
+      stopFactRotation();
+      hideCancelBtn();
+      statusText.textContent = "Cancelled";
+      const box = document.createElement("div");
+      box.className = "error-card";
+      box.style.color = "var(--ink-dim)";
+      box.style.borderColor = "rgba(255,255,255,0.12)";
+      box.style.background = "rgba(255,255,255,0.04)";
+      box.innerHTML = 'Generation cancelled. <a href="/wizard" style="color:var(--accent); text-decoration:none; margin-left:8px;">Start over →</a>';
+      errBox.appendChild(box);
+    });
+
     es.addEventListener("done", (ev) => {
       try {
         const data = JSON.parse(ev.data);
         es.close();
         setProgress(100, "Done ✓");
         stopFactRotation();
+        hideCancelBtn();
 
         // Token usage
         const tu = data.token_usage;
@@ -404,6 +470,7 @@
         const data = JSON.parse(ev.data);
         es.close();
         stopFactRotation();
+        hideCancelBtn();
         statusText.textContent = "Something went wrong";
         const box = document.createElement("div");
         box.className = "error-card";

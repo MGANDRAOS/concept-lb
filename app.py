@@ -273,6 +273,19 @@ def _persist_plan_record(
     return plan_id
 
 
+class _JobCancelled(Exception):
+    """Raised at cooperative cancel points when the user requested abort."""
+    pass
+
+
+def _check_cancel(job_id: str) -> None:
+    """Raise _JobCancelled if the user asked to cancel this job."""
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+        if job and job.get("cancel_requested"):
+            raise _JobCancelled()
+
+
 def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers: int, model_name: str = "gpt-5.2"):
     with app.app_context():
         try:
@@ -282,6 +295,8 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             _job_update(job_id, percent=2, message="Normalizing intake…", log="Normalizing intake…")
             normalized = normalize_intake(intake)
             concept = normalized["concept"]
+
+            _check_cancel(job_id)
 
             # Stash concept_name early so the job_status page can show it.
             with JOBS_LOCK:
@@ -321,7 +336,10 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             total_chunks = max(1, len(chunks))
             _job_update(job_id, percent=6, message=f"Preparing {total_chunks} bundles…", log=f"Preparing {total_chunks} bundles…")
 
+            _check_cancel(job_id)
+
             def _run_bundle(chunk_index: int, specs_chunk: list, include_assumptions: bool):
+                _check_cancel(job_id)
                 _job_update(job_id, message=f"Generating sections bundle {chunk_index+1}/{total_chunks}…", log=f"Bundle {chunk_index+1}/{total_chunks} started")
                 bundle = generate_sections_bundle(
                     concept=concept,
@@ -347,6 +365,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 
                     pct = 10 + (completed / total_chunks) * 80
                     _job_update(job_id, percent=pct, message=f"Bundle {completed}/{total_chunks} done ✅", log=f"Bundle {idx+1}/{total_chunks} done ✅")
+                    _check_cancel(job_id)
 
             # Assemble in correct order
             sections = []
@@ -436,6 +455,13 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 
             _job_update(job_id, percent=100, message="Done ✅", log="Done ✅")
 
+        except _JobCancelled:
+            with JOBS_LOCK:
+                if job_id in JOBS:
+                    JOBS[job_id]["status"] = "cancelled"
+            _job_update(job_id, message="Cancelled", log="Cancelled by user")
+            return
+
         except Exception as e:
             import traceback, io
             buf = io.StringIO()
@@ -492,6 +518,8 @@ def generate_job():
             "concept_name": "",
             "facts": None,
             "facts_sent": False,
+            "cancel_requested": False,
+            "cancelled_sent": False,
         }
 
     t = threading.Thread(
@@ -502,6 +530,18 @@ def generate_job():
     t.start()
 
     return jsonify({"job_id": job_id})
+
+
+@app.route("/api/jobs/<job_id>/cancel", methods=["POST"])
+def job_cancel(job_id: str):
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+        if not job:
+            return jsonify({"ok": False, "error": "job not found"}), 404
+        if job["status"] in ("done", "error", "cancelled"):
+            return jsonify({"ok": True, "status": job["status"]}), 200
+        job["cancel_requested"] = True
+    return jsonify({"ok": True, "status": "cancelling"}), 200
 
 
 @app.route("/jobs/<job_id>", methods=["GET"])
@@ -565,6 +605,7 @@ def job_events(job_id: str):
                 status = job["status"]
                 done_payload = None
                 err_payload = None
+                cancelled_payload = None
                 if status == "done":
                     done_payload = {
                         "view_url": f"/jobs/{job_id}/view",
@@ -573,11 +614,18 @@ def job_events(job_id: str):
                     }
                 elif status == "error":
                     err_payload = {"error": job.get("error") or "Unknown error"}
+                elif status == "cancelled" and not job.get("cancelled_sent"):
+                    cancelled_payload = {"message": "Generation cancelled."}
+                    job["cancelled_sent"] = True
 
             yield f"event: progress\ndata: {json.dumps(payload)}\n\n"
 
             if facts_event_payload is not None:
                 yield f"event: facts\ndata: {json.dumps(facts_event_payload)}\n\n"
+
+            if cancelled_payload is not None:
+                yield f"event: cancelled\ndata: {json.dumps(cancelled_payload)}\n\n"
+                return
 
             if done_payload is not None:
                 yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
