@@ -28,7 +28,7 @@ from orchestration.db import init_db, connect
 from orchestration.plans_repo import create_plan, list_plans, get_plan, delete_plan, apply_section_update
 from orchestration.section_regenerator import regenerate_section
 from orchestration.section_dependencies import downstream_of
-from orchestration.revisions_repo import insert_revision
+from orchestration.revisions_repo import insert_revision, revisions_for_section
 from orchestration.image_generator import generate_section_images
 from schemas.plan_store_schema import PlanRecordCreate, utc_now_iso
 
@@ -901,6 +901,25 @@ def api_regenerate_section(plan_id: str, section_id: str):
         # Re-render HTML from updated plan_json
         new_plan_html = render_template("plan_view.html", plan=plan_data_updated)
 
+        # If this is the first edit for this section, snapshot the pre-edit
+        # content as revision 0 so Revert can restore it.
+        prior_revs = revisions_for_section(conn, plan_id=plan_id, section_id=section_id)
+        if not prior_revs and existing_section is not None:
+            existing_image_block = next(
+                (b for b in (existing_section.get("blocks") or []) if b.get("type") == "image"),
+                None,
+            )
+            insert_revision(
+                conn,
+                plan_id=plan_id,
+                section_id=section_id,
+                section_title=existing_section.get("title", section_id),
+                user_comment="(original — pre-edit snapshot)",
+                blocks=existing_section.get("blocks") or [],
+                image_url=(existing_image_block or {}).get("url"),
+                image_alt=(existing_image_block or {}).get("alt_text"),
+            )
+
         # Persist: plan_json, plan_html, stale set
         apply_section_update(
             conn,
@@ -922,11 +941,92 @@ def api_regenerate_section(plan_id: str, section_id: str):
             image_alt=new_image_alt,
         )
 
+        # At this point there are always ≥ 2 revisions for this section
+        # (the pre-edit snapshot + the one we just inserted), so revert is available.
         return jsonify({
             "ok": True,
             "section": new_section,
             "plan_html": new_plan_html,
             "stale_section_ids": sorted(new_stale),
+            "can_revert": True,
+        })
+    finally:
+        conn.close()
+
+
+@app.route("/api/plans/<plan_id>/sections/<section_id>/revert", methods=["POST"])
+def api_revert_section(plan_id: str, section_id: str):
+    """Undo the most recent regeneration of `section_id` for `plan_id`.
+
+    Restores the previous revision's blocks + image, rewrites plan_json and
+    plan_html, and deletes the most recent revision row so the next revert
+    targets the version before it. 400 if no prior revision exists.
+    """
+    conn = db_conn()
+    try:
+        plan_view = get_plan(conn, plan_id)
+        if plan_view is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+
+        revs = revisions_for_section(conn, plan_id=plan_id, section_id=section_id)
+        if len(revs) < 2:
+            return jsonify({"ok": False, "error": "No earlier version to revert to."}), 400
+
+        current_rev, target_rev = revs[0], revs[1]
+
+        # Reassemble the section from the target revision's stored blocks.
+        reverted_blocks = list(target_rev.blocks)
+        if target_rev.image_url:
+            # Ensure the image block is present at the start; strip any other image first.
+            reverted_blocks = [b for b in reverted_blocks if b.get("type") != "image"]
+            reverted_blocks.insert(0, {
+                "type": "image",
+                "url": target_rev.image_url,
+                "alt_text": target_rev.image_alt or "",
+                "caption": f"Visual representation: {target_rev.section_title}",
+            })
+
+        reverted_section = {
+            "id": section_id,
+            "title": target_rev.section_title,
+            "blocks": reverted_blocks,
+        }
+
+        # Rebuild plan JSON and HTML.
+        plan_data = plan_view.plan or {}
+        existing_sections = plan_data.get("sections") or []
+        plan_data_updated = dict(plan_data)
+        plan_data_updated["sections"] = [
+            reverted_section if s.get("id") == section_id else s
+            for s in existing_sections
+        ]
+        new_plan_html = render_template("plan_view.html", plan=plan_data_updated)
+
+        # Preserve the stale set as-is — revert does not recompute stale flags.
+        apply_section_update(
+            conn,
+            plan_id=plan_id,
+            new_section=reverted_section,
+            new_plan_html=new_plan_html,
+            stale_section_ids=plan_view.stale_section_ids or [],
+        )
+
+        # Pop the "current" revision so revert stacks naturally.
+        conn.execute(
+            "DELETE FROM section_revisions WHERE id = ?",
+            (current_rev.id,),
+        )
+        conn.commit()
+
+        remaining = revisions_for_section(conn, plan_id=plan_id, section_id=section_id)
+
+        return jsonify({
+            "ok": True,
+            "section": reverted_section,
+            "plan_html": new_plan_html,
+            "stale_section_ids": sorted(plan_view.stale_section_ids or []),
+            "can_revert": len(remaining) >= 2,
+            "reverted_to_comment": target_rev.user_comment,
         })
     finally:
         conn.close()
@@ -937,14 +1037,26 @@ def plan_detail_route(plan_id: str):
     conn = db_conn()
     try:
         plan = get_plan(conn, plan_id)
+        if not plan:
+            return "Plan not found", 404
+        if _wants_json():
+            return jsonify(plan.model_dump())
+
+        # Sections with ≥ 2 revisions can be reverted one step.
+        sections_with_history = set()
+        rows = conn.execute(
+            """
+            SELECT section_id
+            FROM section_revisions
+            WHERE plan_id = ?
+            GROUP BY section_id
+            HAVING COUNT(*) >= 2
+            """,
+            (plan_id,),
+        ).fetchall()
+        sections_with_history = {r["section_id"] for r in rows}
     finally:
         conn.close()
-
-    if not plan:
-        return "Plan not found", 404
-
-    if _wants_json():
-        return jsonify(plan.model_dump())
 
     sections_summary = []
     for sec in (plan.plan or {}).get("sections") or []:
@@ -958,6 +1070,7 @@ def plan_detail_route(plan_id: str):
         plan=plan.model_dump(),
         sections=sections_summary,
         stale_section_ids=plan.stale_section_ids or [],
+        sections_with_history=sections_with_history,
     )
 
 

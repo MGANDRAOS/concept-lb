@@ -142,6 +142,8 @@
         }
       });
 
+      // Regenerate always leaves ≥ 2 revisions (snapshot + new), so Revert is available.
+      if (currentSectionId) setRevertVisible(currentSectionId, true);
       const regeneratedTitle = currentSectionTitle || 'Section';
       closeModal();
       showToast(`Section "${regeneratedTitle}" regenerated successfully`);
@@ -152,13 +154,72 @@
     }
   }
 
+  // ── Helpers that mutate sidebar state ───────────────────────
+  function setRevertVisible(sectionId, visible) {
+    const rows = document.querySelectorAll(`.section-row[data-section-id="${sectionId}"]`);
+    rows.forEach((row) => {
+      const btn = row.querySelector('.revert-section-btn');
+      if (!btn) return;
+      if (visible) btn.removeAttribute('hidden');
+      else btn.setAttribute('hidden', '');
+    });
+  }
+
+  function updateIframeAndScroll(planHtml, sectionId) {
+    const frame = document.getElementById('previewFrame');
+    if (!frame) return;
+    const onLoad = () => {
+      frame.removeEventListener('load', onLoad);
+      try {
+        const doc = frame.contentDocument;
+        if (!doc || !sectionId) return;
+        const el = doc.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) { /* ignore */ }
+    };
+    frame.addEventListener('load', onLoad);
+    frame.srcdoc = planHtml;
+  }
+
+  // ── Revert ──────────────────────────────────────────────────
+  async function revertSection({ planId, sectionId, sectionTitle }) {
+    try {
+      const resp = await fetch(
+        `/api/plans/${encodeURIComponent(planId)}/sections/${encodeURIComponent(sectionId)}/revert`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } },
+      );
+      let body;
+      try { body = await resp.json(); } catch (_) { body = null; }
+      if (!resp.ok || !body || !body.ok) {
+        const msg = (body && (body.error || body.error_type)) || `Request failed (${resp.status}).`;
+        showToast(`Revert failed: ${msg}`, 'error');
+        return;
+      }
+      updateIframeAndScroll(body.plan_html, sectionId);
+      setRevertVisible(sectionId, !!body.can_revert);
+      showToast(`Section "${sectionTitle}" reverted to the previous version`);
+    } catch (err) {
+      showToast(`Network error: ${err.message || err}`, 'error');
+    }
+  }
+
   document.addEventListener('click', (event) => {
-    const btn = event.target.closest('.edit-section-btn');
-    if (btn) {
+    const editBtn = event.target.closest('.edit-section-btn');
+    if (editBtn) {
       openModal({
-        planId: btn.dataset.planId,
-        sectionId: btn.dataset.sectionId,
-        sectionTitle: btn.dataset.sectionTitle,
+        planId: editBtn.dataset.planId,
+        sectionId: editBtn.dataset.sectionId,
+        sectionTitle: editBtn.dataset.sectionTitle,
+      });
+      return;
+    }
+    const revertBtn = event.target.closest('.revert-section-btn');
+    if (revertBtn) {
+      if (!confirm(`Revert "${revertBtn.dataset.sectionTitle}" to the previous version?`)) return;
+      revertSection({
+        planId: revertBtn.dataset.planId,
+        sectionId: revertBtn.dataset.sectionId,
+        sectionTitle: revertBtn.dataset.sectionTitle,
       });
     }
   });

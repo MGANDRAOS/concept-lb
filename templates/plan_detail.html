@@ -120,6 +120,15 @@
           {% endif %}
           <button
             type="button"
+            class="revert-section-btn"
+            data-section-id="{{ section.id }}"
+            data-section-title="{{ section.title }}"
+            data-plan-id="{{ plan.id }}"
+            title="Revert to the previous version"
+            {% if section.id not in (sections_with_history or []) %}hidden{% endif %}
+          >Revert</button>
+          <button
+            type="button"
             class="edit-section-btn"
             data-section-id="{{ section.id }}"
             data-section-title="{{ section.title }}"
