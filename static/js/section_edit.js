@@ -61,9 +61,21 @@
           }),
         },
       );
-      const body = await resp.json();
+      let body;
+      try {
+        body = await resp.json();
+      } catch (_) {
+        // Server returned non-JSON (e.g., a crash page). Show the status text.
+        const raw = await resp.text().catch(() => '');
+        const preview = (raw || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+        showError(`Server error (${resp.status} ${resp.statusText || ''}).${preview ? ' ' + preview : ''}`);
+        submitBtn.disabled = false;
+        submitLabel.textContent = 'Regenerate';
+        return;
+      }
       if (!resp.ok || !body.ok) {
-        showError(body.error || `Request failed (${resp.status}).`);
+        const label = body.error_type ? `[${body.error_type}] ` : '';
+        showError(`${label}${body.error || `Request failed (${resp.status}).`}`);
         submitBtn.disabled = false;
         submitLabel.textContent = 'Regenerate';
         return;

@@ -821,6 +821,28 @@ def api_regenerate_section(plan_id: str, section_id: str):
             return jsonify({"ok": False, "error": f"unknown section: {section_id}"}), 400
         except ValueError as ve:
             return jsonify({"ok": False, "error": str(ve)}), 502
+        except Exception as e:
+            # Surface OpenAI errors (rate limits, quota, context limits, auth) and
+            # any other upstream failure as structured JSON so the UI can display them.
+            err_type = type(e).__name__
+            msg = str(e) or err_type
+            # Try to extract a cleaner message from OpenAI-style errors
+            try:
+                body = getattr(e, "response", None)
+                if body is not None and hasattr(body, "json"):
+                    data = body.json()
+                    api_err = (data or {}).get("error") or {}
+                    api_msg = api_err.get("message")
+                    if api_msg:
+                        msg = api_msg
+            except Exception:
+                pass
+            status_code = 429 if "RateLimit" in err_type or "insufficient_quota" in msg else 502
+            return jsonify({
+                "ok": False,
+                "error": f"{err_type}: {msg}",
+                "error_type": err_type,
+            }), status_code
 
         # Optionally regenerate the image
         new_image_url = None
