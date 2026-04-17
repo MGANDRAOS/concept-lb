@@ -167,7 +167,7 @@
       inset: 0 auto 0 0;
       width: 0;
       background: var(--accent);
-      animation: timer-advance 8s linear forwards;
+      animation: timer-advance 15s linear forwards;
     }
     @keyframes timer-advance {
       from { width: 0%; }
@@ -317,7 +317,7 @@
     let facts = [];
     let factIdx = 0;
     let factRotationTimer = null;
-    const FACT_DURATION_MS = 8000;
+    const FACT_DURATION_MS = 15000;
 
     // --- UI helpers ---
     const fill = document.getElementById("fill");
@@ -387,18 +387,44 @@
 
     function hideCancelBtn() { cancelBtn.classList.add("hidden"); }
 
+    function showCancelledState() {
+      try { es.close(); } catch (_) {}
+      stopFactRotation();
+      hideCancelBtn();
+      statusText.textContent = "Cancelled";
+      // Clear any prior error content so we don't stack messages
+      errBox.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "error-card";
+      box.style.color = "var(--ink-dim)";
+      box.style.borderColor = "rgba(255,255,255,0.12)";
+      box.style.background = "rgba(255,255,255,0.04)";
+      box.innerHTML = 'Generation cancelled. <a href="/wizard" style="color:var(--accent); text-decoration:none; margin-left:8px;">Start over →</a>';
+      errBox.appendChild(box);
+    }
+
     // --- Cancel handler ---
+    // Transition the UI immediately on POST success. We don't wait for the
+    // backend's SSE 'cancelled' event because the server thread may be blocked
+    // inside a long LLM call (normalize_intake, a section bundle) that won't
+    // hit a cancel checkpoint for tens of seconds. The server will still bail
+    // at the next checkpoint to save compute.
     cancelBtn.addEventListener("click", async () => {
       if (cancelBtn.disabled) return;
       cancelBtn.disabled = true;
       cancelBtn.textContent = "Cancelling…";
       statusText.textContent = "Cancelling…";
       try {
-        await fetch(`/api/jobs/${jobId}/cancel`, { method: "POST" });
-      } catch (_) {
-        // Server-side cancel signal may still have landed; we rely on the
-        // cancelled SSE event for the authoritative UI transition.
-      }
+        const resp = await fetch(`/api/jobs/${jobId}/cancel`, { method: "POST" });
+        // 2xx (including 200 "already terminal") is enough for us — show the
+        // cancelled state regardless. If the POST failed entirely, fall through.
+        if (resp && resp.ok) {
+          showCancelledState();
+          return;
+        }
+      } catch (_) { /* fall through — still try to show cancelled UI */ }
+      // Network failure: still show cancelled locally so the user isn't stuck.
+      showCancelledState();
     });
 
     // --- SSE ---
@@ -422,20 +448,11 @@
       } catch (_) { /* ignore */ }
     });
 
-    es.addEventListener("cancelled", (ev) => {
-      try {
-        es.close();
-      } catch (_) { /* ignore */ }
-      stopFactRotation();
-      hideCancelBtn();
-      statusText.textContent = "Cancelled";
-      const box = document.createElement("div");
-      box.className = "error-card";
-      box.style.color = "var(--ink-dim)";
-      box.style.borderColor = "rgba(255,255,255,0.12)";
-      box.style.background = "rgba(255,255,255,0.04)";
-      box.innerHTML = 'Generation cancelled. <a href="/wizard" style="color:var(--accent); text-decoration:none; margin-left:8px;">Start over →</a>';
-      errBox.appendChild(box);
+    es.addEventListener("cancelled", () => {
+      // Server-confirmed cancellation. If the user already clicked cancel
+      // client-side, this is a no-op; if they didn't (server cancelled for
+      // another reason), fall into the same UI transition.
+      showCancelledState();
     });
 
     es.addEventListener("done", (ev) => {
