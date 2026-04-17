@@ -296,7 +296,7 @@ def generate_html():
 
 @app.route("/", methods=["GET"])
 def home():
-    return redirect("/wizard")
+    return render_template("landing.html")
 
 
 @app.route("/wizard", methods=["GET"])
