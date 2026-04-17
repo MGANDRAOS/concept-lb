@@ -77,6 +77,53 @@ def _chunk_list(items, chunk_size: int):
         yield items[i : i + chunk_size]
 
 
+def _cell_to_str(v: Any) -> str:
+    """Coerce a table-cell-like value to a string for schema validation.
+
+    The LLM frequently returns numeric values in table rows and
+    assumptions table entries. Pydantic rejects non-strings. Drop trailing
+    .0 on whole floats to keep table output readable (1000.0 -> "1000").
+    """
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return "yes" if v else "no"
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
+
+
+def _stringify_table_cells(sections: list) -> None:
+    """In-place: coerce every table-block row cell to str across all sections."""
+    for section in sections or []:
+        for block in section.get("blocks", []) or []:
+            if block.get("type") == "table":
+                coerced_rows = []
+                for row in block.get("rows") or []:
+                    if isinstance(row, list):
+                        coerced_rows.append([_cell_to_str(c) for c in row])
+                    else:
+                        coerced_rows.append([_cell_to_str(row)])
+                block["rows"] = coerced_rows
+                cols = block.get("columns")
+                if isinstance(cols, list):
+                    block["columns"] = [_cell_to_str(c) for c in cols]
+
+
+def _stringify_assumptions_values(assumptions: list) -> list:
+    """Return a copy of assumptions_table with numeric `value` fields stringified."""
+    out = []
+    for r in assumptions or []:
+        if not isinstance(r, dict):
+            continue
+        out.append({
+            "label": _cell_to_str(r.get("label", "")),
+            "value": _cell_to_str(r.get("value", "")),
+            "explanation": _cell_to_str(r.get("explanation", "")),
+        })
+    return out
+
+
 def _convert_images_to_data_uris(sections: list) -> list:
     """
     Convert external image URLs in sections to base64 data URIs.
@@ -168,6 +215,8 @@ def generate_html():
     if not assumptions_table or not disclaimer:
         raise ValueError("Assumptions missing from last bundle response.")
 
+    assumptions_table = _stringify_assumptions_values(assumptions_table)
+
     assumptions_section = {
         "id": "assumptions_table_section",
         "title": "Assumptions Table (Lebanon-Calibrated)",
@@ -184,6 +233,8 @@ def generate_html():
 
     # Convert external image URLs to data URIs for faster/offline rendering
     sections = _convert_images_to_data_uris(sections)
+    # Coerce any numeric/non-string cells the LLM slipped into table blocks.
+    _stringify_table_cells(sections)
 
     final_plan = {
         "plan_meta": {
@@ -384,6 +435,8 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 
             _job_update(job_id, percent=94, message="Assembling final plan…", log="Assembling final plan…")
 
+            assumptions_table = _stringify_assumptions_values(assumptions_table)
+
             assumptions_section = {
                 "id": "assumptions_table_section",
                 "title": "Assumptions Table (Lebanon-Calibrated)",
@@ -400,6 +453,8 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 
             # Convert external image URLs to data URIs for faster/offline rendering
             sections = _convert_images_to_data_uris(sections)
+            # Coerce any numeric/non-string cells the LLM slipped into table blocks.
+            _stringify_table_cells(sections)
 
             final_plan = {
                 "plan_meta": {
