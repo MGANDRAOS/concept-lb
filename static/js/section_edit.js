@@ -105,9 +105,22 @@
         return;
       }
 
-      // Update the iframe preview in place
+      // Update the iframe preview in place, then scroll to the edited section
       const frame = document.getElementById('previewFrame');
+      const scrollTargetId = currentSectionId;
       if (frame) {
+        const onLoad = () => {
+          frame.removeEventListener('load', onLoad);
+          try {
+            const doc = frame.contentDocument;
+            if (!doc || !scrollTargetId) return;
+            const el = doc.getElementById(scrollTargetId);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          } catch (_) { /* cross-origin or not-yet-ready — ignore */ }
+        };
+        frame.addEventListener('load', onLoad);
         frame.srcdoc = body.plan_html;
       }
 
