@@ -77,9 +77,22 @@ def _chunk_list(items, chunk_size: int):
         yield items[i : i + chunk_size]
 
 
+try:
+    from zoneinfo import ZoneInfo  # Python 3.9+
+    _BEIRUT_TZ = ZoneInfo("Asia/Beirut")
+except Exception:
+    _BEIRUT_TZ = None
+
+
 @app.template_filter("pretty_datetime")
 def _pretty_datetime_filter(value: Any) -> str:
-    """Render an ISO-8601 timestamp as 'Apr 17, 2026 · 04:38' for the UI."""
+    """Render an ISO-8601 timestamp in Beirut time as 'Apr 17, 2026 · 04:38'.
+
+    Stored timestamps are UTC. Naive datetimes are assumed UTC. If
+    zoneinfo is unavailable (pre-3.9 without backports), a fixed UTC+3
+    offset is used as a best-effort fallback (correct in summer, one
+    hour off during EET winter — Beirut is currently on EEST).
+    """
     if not value:
         return ""
     try:
@@ -89,6 +102,14 @@ def _pretty_datetime_filter(value: Any) -> str:
         dt = datetime.fromisoformat(s)
     except Exception:
         return str(value)
+
+    from datetime import timezone, timedelta
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    if _BEIRUT_TZ is not None:
+        dt = dt.astimezone(_BEIRUT_TZ)
+    else:
+        dt = dt.astimezone(timezone(timedelta(hours=3)))
     return dt.strftime("%b %d, %Y · %H:%M")
 
 
