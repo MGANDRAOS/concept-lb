@@ -13,10 +13,33 @@
 
   let currentPlanId = null;
   let currentSectionId = null;
+  let currentSectionTitle = null;
+
+  // ── Toast notification ──────────────────────────────────────
+  let toastTimer = null;
+  function showToast(message, variant = 'success') {
+    let toast = document.getElementById('sectionEditToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'sectionEditToast';
+      toast.className = 'section-edit-toast';
+      document.body.appendChild(toast);
+    }
+    toast.className = `section-edit-toast ${variant}`;
+    toast.textContent = message;
+    // Force reflow so re-triggered animation plays
+    void toast.offsetWidth;
+    toast.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 4000);
+  }
 
   function openModal({ planId, sectionId, sectionTitle }) {
     currentPlanId = planId;
     currentSectionId = sectionId;
+    currentSectionTitle = sectionTitle;
     titleInput.value = sectionTitle;
     commentInput.value = '';
     imageCheckbox.checked = false;
@@ -32,6 +55,7 @@
     backdrop.hidden = true;
     currentPlanId = null;
     currentSectionId = null;
+    currentSectionTitle = null;
   }
 
   function showError(message) {
@@ -105,7 +129,9 @@
         }
       });
 
+      const regeneratedTitle = currentSectionTitle || 'Section';
       closeModal();
+      showToast(`Section "${regeneratedTitle}" regenerated successfully`);
     } catch (err) {
       showError(`Network error: ${err.message || err}`);
       submitBtn.disabled = false;
