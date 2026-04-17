@@ -1,7 +1,8 @@
 # orchestration/plans_repo.py
 import json
 import sqlite3
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from schemas.plan_store_schema import PlanRecordCreate, PlanListItem, PlanView
 
@@ -118,6 +119,16 @@ def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
     if not r:
         return None
 
+    stale_ids_raw = r["stale_section_ids"] if "stale_section_ids" in r.keys() else None
+    stale_ids: list = []
+    if stale_ids_raw:
+        try:
+            parsed = json.loads(stale_ids_raw)
+            if isinstance(parsed, list):
+                stale_ids = [str(x) for x in parsed]
+        except Exception:
+            stale_ids = []
+
     return PlanView(
         id=r["id"],
         created_at=r["created_at"],
@@ -136,4 +147,60 @@ def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
         tokens_out=r["tokens_out"],
         latency_ms=r["latency_ms"],
         error_message=r["error_message"],
+        stale_section_ids=stale_ids,
     )
+
+
+def apply_section_update(
+    conn: sqlite3.Connection,
+    *,
+    plan_id: str,
+    new_section: Dict[str, Any],
+    new_plan_html: str,
+    stale_section_ids: Iterable[str],
+) -> None:
+    """Replace one section in plan_json, persist updated plan_html, and
+    overwrite the stale_section_ids set.
+
+    Raises ValueError if the plan doesn't exist.
+    """
+    row = conn.execute(
+        "SELECT plan_json FROM plans WHERE id = ?", (plan_id,)
+    ).fetchone()
+    if row is None:
+        raise ValueError(f"plan not found: {plan_id!r}")
+
+    plan = json.loads(row["plan_json"] or "{}")
+    sections = plan.get("sections") or []
+    target_id = new_section.get("id")
+    replaced = False
+    for idx, sec in enumerate(sections):
+        if sec.get("id") == target_id:
+            sections[idx] = new_section
+            replaced = True
+            break
+    if not replaced:
+        sections.append(new_section)
+    plan["sections"] = sections
+
+    stale_json = json.dumps(sorted({str(s) for s in stale_section_ids}))
+    now = datetime.now(timezone.utc).isoformat()
+
+    conn.execute(
+        """
+        UPDATE plans
+        SET plan_json = ?,
+            plan_html = ?,
+            stale_section_ids = ?,
+            updated_at = ?
+        WHERE id = ?
+        """,
+        (
+            json.dumps(plan, ensure_ascii=False),
+            new_plan_html,
+            stale_json,
+            now,
+            plan_id,
+        ),
+    )
+    conn.commit()
