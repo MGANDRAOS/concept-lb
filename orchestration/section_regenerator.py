@@ -58,6 +58,19 @@ def _find_spec(section_id: str) -> Dict[str, Any]:
     raise KeyError(f"Unknown section_id: {section_id!r}")
 
 
+def _strip_image_blocks(section: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Return a copy of the section with image blocks removed. Base64 data URIs
+    for images can easily exceed the model's context window and are irrelevant
+    to regenerating textual content.
+    """
+    if section is None:
+        return None
+    trimmed = dict(section)
+    blocks = trimmed.get("blocks") or []
+    trimmed["blocks"] = [b for b in blocks if b.get("type") != "image"]
+    return trimmed
+
+
 def regenerate_section(
     *,
     concept: Dict[str, Any],
@@ -78,7 +91,7 @@ def regenerate_section(
         concept_json=json.dumps(concept, ensure_ascii=False),
         spec_json=json.dumps(spec, ensure_ascii=False),
         existing_section_json=(
-            json.dumps(existing_section, ensure_ascii=False)
+            json.dumps(_strip_image_blocks(existing_section), ensure_ascii=False)
             if existing_section is not None else "null"
         ),
         user_comment=user_comment or "",

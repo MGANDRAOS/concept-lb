@@ -102,3 +102,37 @@ def test_regenerate_raises_for_unknown_section_id(fake_concept):
             existing_section=None,
             user_comment="x",
         )
+
+
+def test_regenerate_strips_image_blocks_from_existing_section(fake_concept):
+    """Image blocks can carry huge base64 data URIs that blow past the
+    context window. The existing section sent to the LLM must be text-only.
+    """
+    existing_with_image = {
+        "id": "mission",
+        "title": "Mission",
+        "blocks": [
+            {"type": "image", "url": "data:image/png;base64," + ("A" * 100000), "alt_text": "hero"},
+            {"type": "paragraph", "text": "Original mission."},
+            {"type": "bullets", "items": ["a", "b"]},
+        ],
+    }
+
+    with patch(
+        "orchestration.section_regenerator.call_model_json",
+        return_value=_fake_llm_response(),
+    ) as mocked:
+        regenerate_section(
+            concept=fake_concept,
+            section_id="mission",
+            existing_section=existing_with_image,
+            user_comment="x",
+        )
+
+    _, kwargs = mocked.call_args
+    up = kwargs["user_prompt"]
+    # Image URL must not leak into the prompt
+    assert "data:image/png" not in up
+    assert "AAAAAAAA" not in up
+    # But the other blocks' content must still be there
+    assert "Original mission." in up
