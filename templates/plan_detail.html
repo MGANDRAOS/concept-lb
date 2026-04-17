@@ -297,5 +297,39 @@
       if (e.key === 'f' && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') toggleFullscreen();
     });
   </script>
+
+<div class="edit-modal-backdrop" id="editModalBackdrop" hidden>
+  <div class="edit-modal" role="dialog" aria-labelledby="editModalTitle" aria-modal="true">
+    <div class="edit-modal-header">
+      <h2 id="editModalTitle">Edit section</h2>
+      <button type="button" class="edit-modal-close" id="editModalClose" aria-label="Close">×</button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="edit-modal-field">
+        <label for="editSectionTitle">Section</label>
+        <input type="text" id="editSectionTitle" disabled />
+      </div>
+      <div class="edit-modal-field">
+        <label for="editUserComment">What would you like to change?</label>
+        <textarea id="editUserComment" rows="6"
+          placeholder="e.g., Make the tone more conservative. Emphasize the breakfast program. Remove the reference to X."></textarea>
+      </div>
+      <div class="edit-modal-field checkbox-row">
+        <label>
+          <input type="checkbox" id="editRegenerateImage" />
+          Regenerate the section image
+        </label>
+      </div>
+      <div class="edit-modal-error" id="editModalError" hidden></div>
+    </div>
+    <div class="edit-modal-footer">
+      <button type="button" class="btn btn-secondary" id="editModalCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="editModalSubmit">
+        <span id="editModalSubmitLabel">Regenerate</span>
+      </button>
+    </div>
+  </div>
+</div>
+<script src="/js/section_edit.js"></script>
 </body>
 </html>

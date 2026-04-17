@@ -89,3 +89,113 @@ body.with-section-sidebar .stats-bar,
 body.with-section-sidebar .content {
   margin-left: 280px;
 }
+
+.edit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.edit-modal-backdrop[hidden] { display: none; }
+
+.edit-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+  width: min(560px, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.edit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border, #d4d4d8);
+}
+
+.edit-modal-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.edit-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--dim, #a1a1aa);
+  padding: 4px 8px;
+}
+
+.edit-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-modal-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2, #27272a);
+  margin-bottom: 6px;
+}
+
+.edit-modal-field input[type="text"],
+.edit-modal-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--border, #d4d4d8);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text, #09090b);
+}
+
+.edit-modal-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.edit-modal-field.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.edit-modal-error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 12px;
+}
+
+.edit-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border, #d4d4d8);
+  background: var(--bg2, #f4f4f5);
+}
+
+.edit-modal-footer .btn[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+}
