@@ -25,7 +25,11 @@ from orchestration.risk_engine import evaluate_risk
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from orchestration.db import init_db, connect
-from orchestration.plans_repo import create_plan, list_plans, get_plan, delete_plan
+from orchestration.plans_repo import create_plan, list_plans, get_plan, delete_plan, apply_section_update
+from orchestration.section_regenerator import regenerate_section
+from orchestration.section_dependencies import downstream_of
+from orchestration.revisions_repo import insert_revision
+from orchestration.image_generator import generate_section_images
 from schemas.plan_store_schema import PlanRecordCreate, utc_now_iso
 
 from playwright.sync_api import sync_playwright
@@ -781,6 +785,128 @@ def plan_delete_route(plan_id: str):
     if not deleted:
         return jsonify({"ok": False, "error": "plan not found"}), 404
     return jsonify({"ok": True})
+
+
+@app.route("/api/plans/<plan_id>/sections/<section_id>/regenerate", methods=["POST"])
+def api_regenerate_section(plan_id: str, section_id: str):
+    payload = request.get_json(silent=True) or {}
+    user_comment = (payload.get("user_comment") or "").strip()
+    regenerate_image_flag = bool(payload.get("regenerate_image"))
+
+    conn = db_conn()
+    try:
+        plan_view = get_plan(conn, plan_id)
+        if plan_view is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+
+        plan_data = plan_view.plan or {}
+        existing_sections = plan_data.get("sections") or []
+        existing_section = next(
+            (s for s in existing_sections if s.get("id") == section_id),
+            None,
+        )
+
+        concept_obj = plan_view.normalized_intake or plan_view.intake or {}
+
+        # Regenerate the section content
+        try:
+            new_section = regenerate_section(
+                concept=concept_obj,
+                section_id=section_id,
+                existing_section=existing_section,
+                user_comment=user_comment,
+            )
+        except KeyError:
+            return jsonify({"ok": False, "error": f"unknown section: {section_id}"}), 400
+        except ValueError as ve:
+            return jsonify({"ok": False, "error": str(ve)}), 502
+
+        # Optionally regenerate the image
+        new_image_url = None
+        new_image_alt = None
+        if regenerate_image_flag:
+            img = generate_section_images(
+                concept_name=concept_obj.get("concept_name", "Restaurant Concept"),
+                concept_description=concept_obj.get("one_liner", "") or concept_obj.get("concept_description", ""),
+                section_id=section_id,
+                section_title=new_section.get("title", section_id),
+                concept=concept_obj,
+            )
+            if img:
+                new_image_url, new_image_alt = img
+                image_block = {
+                    "type": "image",
+                    "url": new_image_url,
+                    "alt_text": new_image_alt,
+                    "caption": f"Visual representation: {new_section.get('title', '')}",
+                }
+                blocks = list(new_section.get("blocks") or [])
+                blocks = [b for b in blocks if b.get("type") != "image"]
+                blocks.insert(0, image_block)
+                new_section["blocks"] = blocks
+        else:
+            # Preserve existing image if there was one
+            if existing_section:
+                existing_image_block = next(
+                    (b for b in (existing_section.get("blocks") or []) if b.get("type") == "image"),
+                    None,
+                )
+                if existing_image_block:
+                    blocks = list(new_section.get("blocks") or [])
+                    blocks = [b for b in blocks if b.get("type") != "image"]
+                    blocks.insert(0, existing_image_block)
+                    new_section["blocks"] = blocks
+                    new_image_url = existing_image_block.get("url")
+                    new_image_alt = existing_image_block.get("alt_text")
+
+        # Compute new stale set: existing stale minus the regenerated one,
+        # plus the transitive downstream of the regenerated section.
+        previous_stale = set(plan_view.stale_section_ids or [])
+        previous_stale.discard(section_id)
+        new_stale = previous_stale | downstream_of(section_id)
+        new_stale.discard(section_id)
+
+        # Swap the section into plan_json
+        plan_data_updated = dict(plan_data)
+        plan_data_updated["sections"] = [
+            new_section if s.get("id") == section_id else s
+            for s in existing_sections
+        ]
+        if not any(s.get("id") == section_id for s in existing_sections):
+            plan_data_updated["sections"] = list(existing_sections) + [new_section]
+
+        # Re-render HTML from updated plan_json
+        new_plan_html = render_template("plan_view.html", plan=plan_data_updated)
+
+        # Persist: plan_json, plan_html, stale set
+        apply_section_update(
+            conn,
+            plan_id=plan_id,
+            new_section=new_section,
+            new_plan_html=new_plan_html,
+            stale_section_ids=new_stale,
+        )
+
+        # Audit: persist the revision
+        insert_revision(
+            conn,
+            plan_id=plan_id,
+            section_id=section_id,
+            section_title=new_section.get("title", section_id),
+            user_comment=user_comment or None,
+            blocks=new_section.get("blocks") or [],
+            image_url=new_image_url,
+            image_alt=new_image_alt,
+        )
+
+        return jsonify({
+            "ok": True,
+            "section": new_section,
+            "plan_html": new_plan_html,
+            "stale_section_ids": sorted(new_stale),
+        })
+    finally:
+        conn.close()
 
 
 @app.route("/plans/<plan_id>", methods=["GET"])
