@@ -47,7 +47,7 @@ INSTRUCTIONS:
 """.strip()
 
 
-_REGEN_MODEL = "gpt-5.2"
+_REGEN_DEFAULT_MODEL = "gpt-5.4-nano-2026-03-17"
 _REGEN_MAX_TOKENS = 4000
 
 
@@ -64,6 +64,7 @@ def regenerate_section(
     section_id: str,
     existing_section: Optional[Dict[str, Any]],
     user_comment: str,
+    model_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Regenerate a single section with a steering user comment.
 
@@ -86,7 +87,7 @@ def regenerate_section(
     result = call_model_json(
         system_prompt=BUNDLE_SYSTEM_PROMPT,
         user_prompt=user_prompt,
-        model_name=_REGEN_MODEL,
+        model_name=model_name or _REGEN_DEFAULT_MODEL,
         max_output_tokens=_REGEN_MAX_TOKENS,
     )
 

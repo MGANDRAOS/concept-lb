@@ -808,13 +808,14 @@ def api_regenerate_section(plan_id: str, section_id: str):
 
         concept_obj = plan_view.normalized_intake or plan_view.intake or {}
 
-        # Regenerate the section content
+        # Regenerate the section content; reuse the plan's original model
         try:
             new_section = regenerate_section(
                 concept=concept_obj,
                 section_id=section_id,
                 existing_section=existing_section,
                 user_comment=user_comment,
+                model_name=plan_view.model,
             )
         except KeyError:
             return jsonify({"ok": False, "error": f"unknown section: {section_id}"}), 400
