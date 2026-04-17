@@ -75,3 +75,4 @@ class FinalPlan(BaseModel):
     disclaimer: str
     risk_report: Optional[Dict[str, Any]] = None
     derived_financials: Optional[Dict[str, Any]] = None
+    token_usage: Optional[Dict[str, Any]] = None
