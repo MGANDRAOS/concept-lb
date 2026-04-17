@@ -287,6 +287,7 @@ def _persist_plan_record(
     plan_html: str | None,
     status: str,
     error_message: str | None = None,
+    model_name: str | None = None,
 ):
     now = utc_now_iso()
     plan_id = uuid.uuid4().hex
@@ -306,7 +307,7 @@ def _persist_plan_record(
         title=title,
         mode="phase1",
         locale=locale,
-        model="gpt-5.2",
+        model=model_name or "unknown",
         job_id=job_id,
         intake=intake or {},
         normalized_intake=normalized,
@@ -495,6 +496,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                 plan=validated,
                 plan_html=plan_html,
                 status="complete",
+                model_name=model_name,
             )
 
             # Capture token usage
@@ -545,6 +547,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                     plan_html=None,
                     status="failed",
                     error_message=err,
+                    model_name=model_name,
                 )
             except Exception:
                 # don't crash the job handler because DB write failed
