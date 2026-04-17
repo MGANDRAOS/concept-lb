@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ plan.title or plan.id }} — Concept LB</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/section_edit.css" />
   <style>
     :root {
       --bg: #fafafa; --bg2: #f4f4f5; --surface: #e4e4e7;
@@ -105,7 +106,29 @@
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
 </head>
-<body>
+<body class="with-section-sidebar">
+  <aside class="section-list-panel">
+    <h3>Plan sections</h3>
+    {% for section in sections or [] %}
+      <div class="section-row" data-section-id="{{ section.id }}">
+        <div class="section-row-title" title="{{ section.title }}">
+          {{ section.title }}
+        </div>
+        <div class="section-row-actions">
+          {% if section.id in (stale_section_ids or []) %}
+            <span class="stale-badge" title="This section may be out of date. Review or regenerate.">Stale</span>
+          {% endif %}
+          <button
+            type="button"
+            class="edit-section-btn"
+            data-section-id="{{ section.id }}"
+            data-section-title="{{ section.title }}"
+            data-plan-id="{{ plan.id }}"
+          >Edit</button>
+        </div>
+      </div>
+    {% endfor %}
+  </aside>
   <!-- Top Chrome -->
   <div class="chrome">
     <div class="chrome-inner">

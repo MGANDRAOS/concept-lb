@@ -923,7 +923,19 @@ def plan_detail_route(plan_id: str):
     if _wants_json():
         return jsonify(plan.model_dump())
 
-    return render_template("plan_detail.html", plan=plan.model_dump())
+    sections_summary = []
+    for sec in (plan.plan or {}).get("sections") or []:
+        sections_summary.append({
+            "id": sec.get("id"),
+            "title": sec.get("title"),
+        })
+
+    return render_template(
+        "plan_detail.html",
+        plan=plan.model_dump(),
+        sections=sections_summary,
+        stale_section_ids=plan.stale_section_ids or [],
+    )
 
 
 @app.route("/plans/<plan_id>/export/pdf", methods=["GET"])

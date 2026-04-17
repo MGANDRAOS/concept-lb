@@ -1,0 +1,91 @@
+.section-list-panel {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--bg2, #f4f4f5);
+  border-right: 1px solid var(--border, #d4d4d8);
+  overflow-y: auto;
+  padding: 16px 12px;
+  z-index: 50;
+}
+
+.section-list-panel h3 {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim, #a1a1aa);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin: 4px 8px 10px;
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: default;
+  transition: background .15s ease;
+}
+
+.section-row:hover {
+  background: var(--surface, #e4e4e7);
+}
+
+.section-row-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2, #27272a);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.stale-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.edit-section-btn {
+  border: 1px solid var(--border, #d4d4d8);
+  background: #fff;
+  color: var(--text2, #27272a);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.edit-section-btn:hover {
+  background: var(--surface, #e4e4e7);
+  border-color: var(--border2, #a1a1aa);
+}
+
+/* Push main content right to make room for the sidebar */
+body.with-section-sidebar .chrome-inner,
+body.with-section-sidebar .stats-bar,
+body.with-section-sidebar .content {
+  margin-left: 280px;
+}
