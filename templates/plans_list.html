@@ -41,12 +41,12 @@
             <th>Status</th>
             <th>Created</th>
             <th>ID</th>
-            <th>Export</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for p in plans %}
-          <tr>
+          <tr data-plan-row="{{ p.id }}">
             <td>
               <a href="/plans/{{ p.id }}">
                 <strong>{{ p.title or ("Plan " ~ p.created_at) }}</strong>
@@ -60,11 +60,17 @@
             </td>
             <td class="text-muted text-small">{{ p.created_at }}</td>
             <td class="text-muted text-small">{{ p.id[:12] }}…</td>
-            <td>
+            <td style="white-space:nowrap;">
               {% if p.status == 'complete' %}
                 <a href="/plans/{{ p.id }}/export/pdf" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;">PDF</a>
                 <a href="/plans/{{ p.id }}/export/financial-pdf" class="btn btn-ghost" style="padding:6px 10px; font-size:12px;">Financial</a>
               {% endif %}
+              <button type="button"
+                      class="delete-plan-btn"
+                      data-plan-id="{{ p.id }}"
+                      title="Delete this plan">
+                Delete
+              </button>
             </td>
           </tr>
           {% endfor %}
@@ -81,7 +87,63 @@
     </div>
   </div>
 
+  <style>
+    .delete-plan-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid #e5e7eb;
+      background: transparent;
+      color: #71717a;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-left: 4px;
+    }
+    .delete-plan-btn:hover:not(:disabled) {
+      border-color: #fca5a5;
+      color: #dc2626;
+      background: #fef2f2;
+    }
+    .delete-plan-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  </style>
+
   <script>
+    document.addEventListener('click', async (event) => {
+      const btn = event.target.closest('.delete-plan-btn');
+      if (!btn) return;
+      const planId = btn.dataset.planId;
+      if (!planId) return;
+      if (!confirm('Delete this plan? This cannot be undone.')) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+
+      try {
+        const resp = await fetch(`/api/plans/${encodeURIComponent(planId)}`, {
+          method: 'DELETE',
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!resp.ok) {
+          let msg = `Failed (${resp.status})`;
+          try { const body = await resp.json(); if (body && body.error) msg = body.error; } catch (_) {}
+          alert(`Delete failed: ${msg}`);
+          btn.disabled = false;
+          btn.textContent = 'Delete';
+          return;
+        }
+        // Remove the row from the DOM without a full reload
+        const row = document.querySelector(`tr[data-plan-row="${planId}"]`);
+        if (row) row.remove();
+      } catch (err) {
+        alert(`Delete failed: ${err.message || err}`);
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+      }
+    });
   </script>
 </body>
 </html>

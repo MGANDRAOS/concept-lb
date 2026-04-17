@@ -98,6 +98,13 @@ def list_plans(
         for r in rows
     ]
 
+def delete_plan(conn: sqlite3.Connection, plan_id: str) -> bool:
+    """Hard-delete a plan row by id. Returns True if a row was removed."""
+    cur = conn.execute("DELETE FROM plans WHERE id = ?", (plan_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
     r = conn.execute(
         """

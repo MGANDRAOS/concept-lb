@@ -25,7 +25,7 @@ from orchestration.risk_engine import evaluate_risk
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from orchestration.db import init_db, connect
-from orchestration.plans_repo import create_plan, list_plans, get_plan
+from orchestration.plans_repo import create_plan, list_plans, get_plan, delete_plan
 from schemas.plan_store_schema import PlanRecordCreate, utc_now_iso
 
 from playwright.sync_api import sync_playwright
@@ -675,6 +675,18 @@ def plans_list_route():
         return jsonify([p.model_dump() for p in plans])
 
     return render_template("plans_list.html", plans=[p.model_dump() for p in plans], q=q, status=status)
+
+
+@app.route("/api/plans/<plan_id>", methods=["DELETE"])
+def plan_delete_route(plan_id: str):
+    conn = db_conn()
+    try:
+        deleted = delete_plan(conn, plan_id)
+    finally:
+        conn.close()
+    if not deleted:
+        return jsonify({"ok": False, "error": "plan not found"}), 404
+    return jsonify({"ok": True})
 
 
 @app.route("/plans/<plan_id>", methods=["GET"])
