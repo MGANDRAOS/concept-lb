@@ -34,7 +34,9 @@ from orchestration.pending_edits_repo import (
     get_pending_edits,
     set_pending_edit,
     clear_pending_edit,
+    clear_all_pending,
 )
+from orchestration.full_plan_regenerator import regenerate_full_plan
 from schemas.plan_store_schema import PlanRecordCreate, utc_now_iso
 
 from playwright.sync_api import sync_playwright
@@ -1085,6 +1087,108 @@ def api_list_pending_edits(plan_id: str):
             return jsonify({"ok": False, "error": "plan not found"}), 404
         edits = get_pending_edits(conn, plan_id)
         return jsonify({"ok": True, "edits": edits})
+    finally:
+        conn.close()
+
+
+@app.route("/api/plans/<plan_id>/regenerate-plan", methods=["POST"])
+def api_regenerate_full_plan(plan_id: str):
+    payload = request.get_json(silent=True) or {}
+    force = bool(payload.get("force"))
+
+    conn = db_conn()
+    try:
+        pv = get_plan(conn, plan_id)
+        if pv is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+
+        edits = get_pending_edits(conn, plan_id)
+        if not edits and not force:
+            return jsonify({"ok": False,
+                            "error": "No pending edits to apply. Pass force=true to regenerate anyway."}), 400
+
+        concept_obj = pv.normalized_intake or pv.intake or {}
+        existing_sections = (pv.plan or {}).get("sections") or []
+
+        # Preserve existing image blocks so images aren't re-generated
+        existing_images: Dict[str, Any] = {}
+        for sec in existing_sections:
+            img = next((b for b in (sec.get("blocks") or [])
+                        if b.get("type") == "image"), None)
+            if img:
+                existing_images[sec.get("id")] = img
+
+        try:
+            new_sections, applied_edit_ids = regenerate_full_plan(
+                concept=concept_obj,
+                existing_sections=existing_sections,
+                pending_edits=edits,
+                model_name=pv.model,
+            )
+        except ValueError as ve:
+            return jsonify({"ok": False, "error": str(ve)}), 502
+        except Exception as e:
+            err_type = type(e).__name__
+            msg = str(e) or err_type
+            status = 429 if "RateLimit" in err_type else 502
+            return jsonify({"ok": False, "error": f"{err_type}: {msg}",
+                            "error_type": err_type}), status
+
+        # Re-attach preserved images (insert at position 0)
+        for sec in new_sections:
+            img = existing_images.get(sec.get("id"))
+            if img:
+                blocks = [b for b in (sec.get("blocks") or [])
+                          if b.get("type") != "image"]
+                blocks.insert(0, img)
+                sec["blocks"] = blocks
+
+        plan_data = dict(pv.plan or {})
+        plan_data["sections"] = new_sections
+        new_plan_html = render_template("plan_view.html", plan=plan_data)
+
+        now = datetime.utcnow().isoformat() + "Z"
+        conn.execute(
+            """
+            UPDATE plans
+            SET plan_json = ?,
+                plan_html = ?,
+                stale_section_ids = NULL,
+                pending_edits_json = NULL,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (json.dumps(plan_data, ensure_ascii=False),
+             new_plan_html, now, plan_id),
+        )
+        conn.commit()
+
+        # Revisions: one per section
+        for sec in new_sections:
+            sid = sec.get("id")
+            if sid in applied_edit_ids:
+                comment = "(full plan regen — edited: " + ", ".join(applied_edit_ids) + ")"
+            else:
+                comment = "(full plan regen)"
+            img = next((b for b in (sec.get("blocks") or [])
+                        if b.get("type") == "image"), None)
+            insert_revision(
+                conn,
+                plan_id=plan_id,
+                section_id=sid,
+                section_title=sec.get("title", sid),
+                user_comment=comment,
+                blocks=sec.get("blocks") or [],
+                image_url=(img or {}).get("url"),
+                image_alt=(img or {}).get("alt_text"),
+            )
+
+        return jsonify({
+            "ok": True,
+            "plan_html": new_plan_html,
+            "applied_edit_section_ids": applied_edit_ids,
+            "stale_section_ids": [],
+        })
     finally:
         conn.close()
 
