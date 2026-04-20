@@ -65,11 +65,11 @@ class ConceptObject(BaseModel):
 
     staff_model: Optional[Literal["lean", "standard", "full", "custom"]] = None
 
-    sales_mix_dinein_pct: Optional[int] = None
-    sales_mix_takeaway_pct: Optional[int] = None
-    sales_mix_delivery_pct: Optional[int] = None
+    sales_mix_dinein_pct: Optional[float] = None
+    sales_mix_takeaway_pct: Optional[float] = None
+    sales_mix_delivery_pct: Optional[float] = None
 
-    target_cogs_pct: Optional[int] = None
+    target_cogs_pct: Optional[float] = None
 
     kitchen_type: Optional[Literal["full_line", "prep_finish", "assembly_only", "central_kitchen"]] = None
     operating_days_per_week: Optional[int] = None

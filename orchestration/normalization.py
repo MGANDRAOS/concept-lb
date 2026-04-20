@@ -276,6 +276,24 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
     elif als is not None and not isinstance(als, str):
         concept_out["alcohol_license_status"] = None
 
+    # --- Coerce fractional percentages (0–1) to full scale (0–100) ---
+    # The model sometimes returns target_cogs_pct as 0.3 meaning 30%. All percent
+    # fields in the schema use the 0–100 convention, so rescale low fractions.
+    percent_fields = [
+        "target_cogs_pct",
+        "sales_mix_dinein_pct",
+        "sales_mix_takeaway_pct",
+        "sales_mix_delivery_pct",
+        "funding_equity_pct",
+        "funding_loan_pct",
+        "revenue_growth_pct",
+        "ramp_start_pct",
+    ]
+    for pk in percent_fields:
+        v = concept_out.get(pk)
+        if isinstance(v, (int, float)) and 0 < v <= 1:
+            concept_out[pk] = float(v) * 100
+
 
     # --- Pass-through: NEVER let the model drop wizard-provided anchors ---
     intake_concept = intake.get("concept", {}) if isinstance(intake.get("concept"), dict) else {}
