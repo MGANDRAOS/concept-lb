@@ -469,3 +469,78 @@ body.with-section-sidebar .content {
   color: #94a3b8;
   font-style: italic;
 }
+
+.btn-danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.btn-danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+.btn-danger[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* ── Deleted sections in sidebar ────────────────────── */
+.section-list-deleted {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border, #d4d4d8);
+}
+
+.section-list-deleted h3 {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin: 0 8px 8px;
+}
+
+.section-row-deleted {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  opacity: .65;
+}
+
+.section-row-deleted:hover { opacity: 1; background: var(--surface, #e4e4e7); }
+
+.section-row-deleted .section-row-title {
+  font-size: 12px;
+  text-decoration: line-through;
+  color: #6b7a9a;
+}
+
+.restore-section-btn {
+  border: 1px solid var(--border, #d4d4d8);
+  background: #fff;
+  color: #059669;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.restore-section-btn:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+}

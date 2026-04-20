@@ -149,6 +149,25 @@
         </div>
       </div>
     {% endfor %}
+    {% if deleted_sections %}
+    <div class="section-list-deleted">
+      <h3>Deleted sections</h3>
+      {% for dsec in deleted_sections %}
+        <div class="section-row-deleted" data-section-id="{{ dsec.id }}">
+          <div class="section-row-title" title="{{ dsec.title }}">{{ dsec.title }}</div>
+          <div class="section-row-actions">
+            <button
+              type="button"
+              class="restore-section-btn"
+              data-section-id="{{ dsec.id }}"
+              data-section-title="{{ dsec.title }}"
+              data-plan-id="{{ plan.id }}"
+            >Restore</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </aside>
   <!-- Top Chrome -->
   <div class="chrome">
@@ -359,6 +378,8 @@
       <div class="edit-modal-error" id="editModalError" hidden></div>
     </div>
     <div class="edit-modal-footer">
+      <button type="button" class="btn btn-danger" id="editModalDelete" title="Remove this section from the plan">🗑 Delete section</button>
+      <div style="flex: 1"></div>
       <button type="button" class="btn btn-secondary" id="editModalCancel">Cancel</button>
       <button type="button" class="btn btn-secondary" id="editModalQueue">Save to queue</button>
       <button type="button" class="btn btn-primary" id="editModalSubmit">

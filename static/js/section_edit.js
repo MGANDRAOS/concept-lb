@@ -11,6 +11,7 @@
   const cancelBtn = document.getElementById('editModalCancel');
   const closeBtn = document.getElementById('editModalClose');
   const queueBtn = document.getElementById('editModalQueue');
+  const deleteBtn = document.getElementById('editModalDelete');
 
   let currentPlanId = null;
   let currentSectionId = null;
@@ -244,6 +245,7 @@
     submitBtn.disabled = false;
     submitLabel.textContent = 'Regenerate now';
     if (queueBtn) queueBtn.disabled = false;
+    if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = '🗑 Delete section'; }
 
     // Deep-clone blocks from the injected map
     const sectionData = (window.__CURRENT_PLAN_SECTIONS__ || {})[sectionId];
@@ -583,8 +585,143 @@
         sectionId: revertBtn.dataset.sectionId,
         sectionTitle: revertBtn.dataset.sectionTitle,
       });
+      return;
+    }
+    const restoreBtn = event.target.closest('.restore-section-btn');
+    if (restoreBtn) {
+      restoreDeletedSection({
+        planId: restoreBtn.dataset.planId,
+        sectionId: restoreBtn.dataset.sectionId,
+        sectionTitle: restoreBtn.dataset.sectionTitle,
+      });
     }
   });
+
+  async function deleteSection() {
+    if (!currentPlanId || !currentSectionId) return;
+    const title = currentSectionTitle || 'this section';
+    if (!confirm(`Delete "${title}" from the plan? You can Restore it later from the sidebar.`)) return;
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Deleting…';
+
+    try {
+      const resp = await fetch(
+        `/api/plans/${encodeURIComponent(currentPlanId)}/sections/${encodeURIComponent(currentSectionId)}`,
+        { method: 'DELETE', headers: { 'Content-Type': 'application/json' } },
+      );
+      let body; try { body = await resp.json(); } catch (_) { body = null; }
+      if (!resp.ok || !body || !body.ok) {
+        const msg = (body && (body.error || body.error_type)) || `Request failed (${resp.status}).`;
+        showError(`Delete failed: ${msg}`);
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = '🗑 Delete section';
+        return;
+      }
+
+      // Remove the section's row and any cached block data client-side
+      const sid = currentSectionId;
+      const sectionTitle = currentSectionTitle;
+      const planId = currentPlanId;
+      const map = window.__CURRENT_PLAN_SECTIONS__ || {};
+      if (sid) delete map[sid];
+
+      // Remove from main list, add to deleted list
+      const row = document.querySelector(`.section-row[data-section-id="${sid}"]`);
+      if (row) row.remove();
+      addToDeletedList(sid, sectionTitle, planId);
+
+      // Update frame
+      updateIframeAndScroll(body.plan_html, null);
+
+      // Resync pending state
+      refetchPending(planId);
+
+      closeModal();
+      showToast(`Section "${sectionTitle}" deleted`);
+    } catch (err) {
+      showError(`Network error: ${err.message || err}`);
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = '🗑 Delete section';
+    }
+  }
+
+  function addToDeletedList(sectionId, sectionTitle, planId) {
+    let container = document.querySelector('.section-list-deleted');
+    if (!container) {
+      const panel = document.querySelector('.section-list-panel');
+      if (!panel) return;
+      container = document.createElement('div');
+      container.className = 'section-list-deleted';
+      const h = document.createElement('h3');
+      h.textContent = 'Deleted sections';
+      container.appendChild(h);
+      panel.appendChild(container);
+    }
+    // Skip if already there
+    if (container.querySelector(`.section-row-deleted[data-section-id="${sectionId}"]`)) return;
+
+    const row = document.createElement('div');
+    row.className = 'section-row-deleted';
+    row.dataset.sectionId = sectionId;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'section-row-title';
+    titleEl.title = sectionTitle;
+    titleEl.textContent = sectionTitle;
+
+    const actions = document.createElement('div');
+    actions.className = 'section-row-actions';
+    const restoreBtn = document.createElement('button');
+    restoreBtn.type = 'button';
+    restoreBtn.className = 'restore-section-btn';
+    restoreBtn.dataset.sectionId = sectionId;
+    restoreBtn.dataset.sectionTitle = sectionTitle;
+    restoreBtn.dataset.planId = planId;
+    restoreBtn.textContent = 'Restore';
+    actions.appendChild(restoreBtn);
+
+    row.appendChild(titleEl);
+    row.appendChild(actions);
+    container.appendChild(row);
+  }
+
+  async function restoreDeletedSection({ planId, sectionId, sectionTitle }) {
+    if (!confirm(`Restore "${sectionTitle}" to the plan?`)) return;
+    try {
+      const resp = await fetch(
+        `/api/plans/${encodeURIComponent(planId)}/sections/${encodeURIComponent(sectionId)}/restore`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } },
+      );
+      let body; try { body = await resp.json(); } catch (_) { body = null; }
+      if (!resp.ok || !body || !body.ok) {
+        const msg = (body && (body.error || body.error_type)) || `Request failed (${resp.status}).`;
+        showToast(`Restore failed: ${msg}`, 'error');
+        return;
+      }
+
+      // Re-add to the client-side sections map so Edit works again
+      const map = window.__CURRENT_PLAN_SECTIONS__ || {};
+      map[sectionId] = body.section;
+      window.__CURRENT_PLAN_SECTIONS__ = map;
+
+      // Remove from deleted list in sidebar
+      const drow = document.querySelector(`.section-row-deleted[data-section-id="${sectionId}"]`);
+      if (drow) drow.remove();
+      // Remove the "Deleted sections" heading if empty
+      const container = document.querySelector('.section-list-deleted');
+      if (container && !container.querySelector('.section-row-deleted')) {
+        container.remove();
+      }
+
+      updateIframeAndScroll(body.plan_html, sectionId);
+      showToast(`Section "${sectionTitle}" restored — reload the page to see it in the sidebar`);
+    } catch (err) {
+      showToast(`Network error: ${err.message || err}`, 'error');
+    }
+  }
+
+  if (deleteBtn) deleteBtn.addEventListener('click', deleteSection);
 
   closeBtn.addEventListener('click', closeModal);
   cancelBtn.addEventListener('click', closeModal);
