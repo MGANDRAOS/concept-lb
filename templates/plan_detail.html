@@ -319,6 +319,23 @@
     });
   </script>
 
+<div class="regen-overlay" id="regenOverlay" hidden aria-live="polite" role="status">
+  <div class="regen-card">
+    <div class="regen-spinner" aria-hidden="true"></div>
+    <div class="regen-title">Regenerating your plan</div>
+    <div class="regen-subtitle">Your queued edits are being woven into every section. This keeps the whole plan coherent and usually takes 2–4 minutes.</div>
+    <div class="regen-sections-list" id="regenSectionsList" hidden>
+      <div class="label">Applying edits to</div>
+      <ul id="regenSectionsUl"></ul>
+    </div>
+    <div class="regen-elapsed">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="regenElapsed">00:00</span>
+    </div>
+    <div class="regen-note">Do not close this tab. You'll see a confirmation when it's done.</div>
+  </div>
+</div>
+
 <div class="edit-modal-backdrop" id="editModalBackdrop" hidden>
   <div class="edit-modal edit-modal-wide" role="dialog" aria-labelledby="editModalTitle" aria-modal="true">
     <div class="edit-modal-header">

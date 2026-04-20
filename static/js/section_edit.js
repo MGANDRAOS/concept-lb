@@ -451,14 +451,70 @@
   }
 
   // ── Regenerate full plan ────────────────────────────────────
+  // Overlay controller for full-plan regeneration
+  let regenElapsedTimer = null;
+  function showRegenOverlay(pendingEdits) {
+    const overlay = document.getElementById('regenOverlay');
+    const elapsedEl = document.getElementById('regenElapsed');
+    const list = document.getElementById('regenSectionsList');
+    const ul = document.getElementById('regenSectionsUl');
+    if (!overlay) return;
+
+    // Populate section titles from sidebar rows so the user sees what's being applied
+    if (ul) {
+      ul.innerHTML = '';
+      const ids = Object.keys(pendingEdits || {});
+      ids.forEach(sid => {
+        const row = document.querySelector(`.section-row[data-section-id="${sid}"] .section-row-title`);
+        const title = row ? row.textContent.trim() : sid;
+        const li = document.createElement('li');
+        li.textContent = title;
+        ul.appendChild(li);
+      });
+      if (list) list.hidden = ids.length === 0;
+    }
+
+    // Start elapsed timer
+    const startedAt = Date.now();
+    const tick = () => {
+      const s = Math.floor((Date.now() - startedAt) / 1000);
+      const mm = String(Math.floor(s / 60)).padStart(2, '0');
+      const ss = String(s % 60).padStart(2, '0');
+      if (elapsedEl) elapsedEl.textContent = `${mm}:${ss}`;
+    };
+    tick();
+    clearInterval(regenElapsedTimer);
+    regenElapsedTimer = setInterval(tick, 1000);
+
+    overlay.hidden = false;
+  }
+
+  function hideRegenOverlay() {
+    const overlay = document.getElementById('regenOverlay');
+    if (overlay) overlay.hidden = true;
+    clearInterval(regenElapsedTimer);
+    regenElapsedTimer = null;
+  }
+
   async function regenerateFullPlan() {
     const btn = document.getElementById('regenPlanBtn');
     if (!btn) return;
     const planId = btn.dataset.planId;
     if (!confirm('Regenerate the full plan using your queued edits? This may take a few minutes and costs an API call.')) return;
+
+    // Fetch current pending edits to show in the overlay (and confirm they exist server-side)
+    let pendingEdits = {};
+    try {
+      const pre = await fetch(`/api/plans/${encodeURIComponent(planId)}/pending`);
+      const preBody = await pre.json();
+      pendingEdits = (preBody && preBody.edits) || {};
+    } catch (_) { /* overlay still shows without the list */ }
+
     btn.disabled = true;
     const originalHTML = btn.innerHTML;
     btn.textContent = 'Regenerating plan…';
+    showRegenOverlay(pendingEdits);
+
     try {
       const resp = await fetch(`/api/plans/${encodeURIComponent(planId)}/regenerate-plan`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -479,6 +535,7 @@
     } catch (err) {
       showToast(`Network error: ${err.message || err}`, 'error');
     } finally {
+      hideRegenOverlay();
       btn.disabled = false;
       btn.innerHTML = originalHTML;
     }
