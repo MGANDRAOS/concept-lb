@@ -138,94 +138,75 @@
         wrapper.appendChild(addBtn);
 
       } else if (type === 'menu_items') {
-        const categories = Array.isArray(block.categories) ? block.categories : [];
-        if (!Array.isArray(currentBlocks[blockIdx].categories)) {
-          currentBlocks[blockIdx].categories = JSON.parse(JSON.stringify(categories));
+        // Schema: { type: "menu_items", category: "...", items: [{name, description}] }
+        if (!Array.isArray(currentBlocks[blockIdx].items)) {
+          currentBlocks[blockIdx].items = JSON.parse(
+            JSON.stringify(Array.isArray(block.items) ? block.items : [])
+          );
         }
 
-        const catContainer = document.createElement('div');
+        const catNameInput = document.createElement('input');
+        catNameInput.type = 'text';
+        catNameInput.value = block.category || '';
+        catNameInput.placeholder = 'Category name';
+        catNameInput.style.marginBottom = '8px';
+        catNameInput.addEventListener('input', function () {
+          currentBlocks[blockIdx].category = this.value;
+        });
+        wrapper.appendChild(catNameInput);
 
-        function renderCategories() {
-          catContainer.innerHTML = '';
-          currentBlocks[blockIdx].categories.forEach(function (cat, catIdx) {
-            const catHeader = document.createElement('div');
-            catHeader.className = 'edit-block-header';
-            catHeader.style.marginTop = catIdx > 0 ? '10px' : '0';
+        const itemsDiv = document.createElement('div');
 
-            const catNameInput = document.createElement('input');
-            catNameInput.type = 'text';
-            catNameInput.value = cat.category || '';
-            catNameInput.placeholder = 'Category name';
-            catNameInput.style.marginBottom = '6px';
-            catNameInput.addEventListener('input', function () {
-              currentBlocks[blockIdx].categories[catIdx].category = this.value;
+        function renderMenuItemRows() {
+          itemsDiv.innerHTML = '';
+          (currentBlocks[blockIdx].items || []).forEach(function (mi, miIdx) {
+            const row = document.createElement('div');
+            row.className = 'edit-menu-item-row';
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.value = mi.name || '';
+            nameInput.placeholder = 'Item name';
+            nameInput.addEventListener('input', function () {
+              currentBlocks[blockIdx].items[miIdx].name = this.value;
             });
 
-            const itemsDiv = document.createElement('div');
-            const menuItems = Array.isArray(cat.items) ? cat.items : [];
+            const descTa = document.createElement('textarea');
+            descTa.value = mi.description || '';
+            descTa.placeholder = 'Description';
+            descTa.rows = 1;
+            descTa.addEventListener('input', function () {
+              currentBlocks[blockIdx].items[miIdx].description = this.value;
+            });
 
-            function renderMenuItemRows() {
-              itemsDiv.innerHTML = '';
-              (currentBlocks[blockIdx].categories[catIdx].items || []).forEach(function (mi, miIdx) {
-                const row = document.createElement('div');
-                row.className = 'edit-menu-item-row';
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-remove';
+            removeBtn.textContent = '−';
+            removeBtn.addEventListener('click', function () {
+              currentBlocks[blockIdx].items.splice(miIdx, 1);
+              renderMenuItemRows();
+            });
 
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.value = mi.name || '';
-                nameInput.placeholder = 'Item name';
-                nameInput.addEventListener('input', function () {
-                  currentBlocks[blockIdx].categories[catIdx].items[miIdx].name = this.value;
-                });
-
-                const descTa = document.createElement('textarea');
-                descTa.value = mi.description || '';
-                descTa.placeholder = 'Description';
-                descTa.rows = 1;
-                descTa.addEventListener('input', function () {
-                  currentBlocks[blockIdx].categories[catIdx].items[miIdx].description = this.value;
-                });
-
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'btn-remove';
-                removeBtn.textContent = '−';
-                removeBtn.addEventListener('click', function () {
-                  currentBlocks[blockIdx].categories[catIdx].items.splice(miIdx, 1);
-                  renderMenuItemRows();
-                });
-
-                row.appendChild(nameInput);
-                row.appendChild(descTa);
-                row.appendChild(removeBtn);
-                itemsDiv.appendChild(row);
-              });
-
-              const addItemBtn = document.createElement('button');
-              addItemBtn.type = 'button';
-              addItemBtn.className = 'edit-block-add';
-              addItemBtn.textContent = '+ Add item';
-              addItemBtn.addEventListener('click', function () {
-                if (!Array.isArray(currentBlocks[blockIdx].categories[catIdx].items)) {
-                  currentBlocks[blockIdx].categories[catIdx].items = [];
-                }
-                currentBlocks[blockIdx].categories[catIdx].items.push({ name: '', description: '' });
-                renderMenuItemRows();
-              });
-              itemsDiv.appendChild(addItemBtn);
-            }
-
-            if (!Array.isArray(currentBlocks[blockIdx].categories[catIdx].items)) {
-              currentBlocks[blockIdx].categories[catIdx].items = JSON.parse(JSON.stringify(menuItems));
-            }
-            renderMenuItemRows();
-
-            catContainer.appendChild(catNameInput);
-            catContainer.appendChild(itemsDiv);
+            row.appendChild(nameInput);
+            row.appendChild(descTa);
+            row.appendChild(removeBtn);
+            itemsDiv.appendChild(row);
           });
         }
-        renderCategories();
-        wrapper.appendChild(catContainer);
+        renderMenuItemRows();
+
+        const addItemBtn = document.createElement('button');
+        addItemBtn.type = 'button';
+        addItemBtn.className = 'edit-block-add';
+        addItemBtn.textContent = '+ Add item';
+        addItemBtn.addEventListener('click', function () {
+          currentBlocks[blockIdx].items.push({ name: '', description: '' });
+          renderMenuItemRows();
+        });
+
+        wrapper.appendChild(itemsDiv);
+        wrapper.appendChild(addItemBtn);
 
       } else if (type === 'image') {
         const notice = document.createElement('div');
