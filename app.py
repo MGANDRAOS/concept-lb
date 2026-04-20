@@ -30,6 +30,11 @@ from orchestration.section_regenerator import regenerate_section
 from orchestration.section_dependencies import downstream_of
 from orchestration.revisions_repo import insert_revision, revisions_for_section
 from orchestration.image_generator import generate_section_images
+from orchestration.pending_edits_repo import (
+    get_pending_edits,
+    set_pending_edit,
+    clear_pending_edit,
+)
 from schemas.plan_store_schema import PlanRecordCreate, utc_now_iso
 
 from playwright.sync_api import sync_playwright
@@ -1028,6 +1033,58 @@ def api_revert_section(plan_id: str, section_id: str):
             "can_revert": len(remaining) >= 2,
             "reverted_to_comment": target_rev.user_comment,
         })
+    finally:
+        conn.close()
+
+
+@app.route("/api/plans/<plan_id>/sections/<section_id>/pending", methods=["PUT"])
+def api_set_pending_edit(plan_id: str, section_id: str):
+    payload = request.get_json(silent=True) or {}
+    blocks = payload.get("blocks")
+    user_comment = (payload.get("user_comment") or "").strip()
+    if not isinstance(blocks, list):
+        return jsonify({"ok": False, "error": "blocks must be a list"}), 400
+
+    conn = db_conn()
+    try:
+        pv = get_plan(conn, plan_id)
+        if pv is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+        try:
+            set_pending_edit(conn, plan_id=plan_id, section_id=section_id,
+                             blocks=blocks, user_comment=user_comment)
+        except ValueError as ve:
+            return jsonify({"ok": False, "error": str(ve)}), 404
+        edits = get_pending_edits(conn, plan_id)
+        return jsonify({"ok": True, "pending": edits.get(section_id, {}),
+                        "pending_section_ids": sorted(edits.keys())})
+    finally:
+        conn.close()
+
+
+@app.route("/api/plans/<plan_id>/sections/<section_id>/pending", methods=["DELETE"])
+def api_clear_pending_edit(plan_id: str, section_id: str):
+    conn = db_conn()
+    try:
+        pv = get_plan(conn, plan_id)
+        if pv is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+        clear_pending_edit(conn, plan_id=plan_id, section_id=section_id)
+        edits = get_pending_edits(conn, plan_id)
+        return jsonify({"ok": True, "pending_section_ids": sorted(edits.keys())})
+    finally:
+        conn.close()
+
+
+@app.route("/api/plans/<plan_id>/pending", methods=["GET"])
+def api_list_pending_edits(plan_id: str):
+    conn = db_conn()
+    try:
+        pv = get_plan(conn, plan_id)
+        if pv is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+        edits = get_pending_edits(conn, plan_id)
+        return jsonify({"ok": True, "edits": edits})
     finally:
         conn.close()
 
