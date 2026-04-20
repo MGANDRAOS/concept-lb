@@ -413,6 +413,10 @@
     errorBox.hidden = true;
     queueBtn.disabled = true;
 
+    // Strip image blocks — base64 data URIs can blow past the LLM context window.
+    // The regenerator preserves existing images separately via plan_json.
+    const blocksForQueue = (currentBlocks || []).filter(b => (b && b.type) !== 'image');
+
     try {
       const resp = await fetch(
         `/api/plans/${encodeURIComponent(currentPlanId)}/sections/${encodeURIComponent(currentSectionId)}/pending`,
@@ -420,7 +424,7 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            blocks: currentBlocks,
+            blocks: blocksForQueue,
             user_comment: commentInput.value.trim(),
           }),
         },

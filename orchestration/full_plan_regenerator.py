@@ -19,8 +19,15 @@ Instructions for this full-plan regeneration:
 """.strip()
 
 
+def _strip_images(blocks):
+    """Drop image blocks (which can carry massive base64 data URIs) before
+    serializing edits into the LLM prompt."""
+    return [b for b in (blocks or []) if (b or {}).get("type") != "image"]
+
+
 def _format_edit(section_id: str, edit: Dict[str, Any]) -> str:
-    blocks_repr = repr(edit.get("blocks") or [])
+    blocks_text_only = _strip_images(edit.get("blocks") or [])
+    blocks_repr = repr(blocks_text_only)
     comment = (edit.get("user_comment") or "").strip()
     parts = [f'- Section "{section_id}":']
     if blocks_repr and blocks_repr != "[]":
