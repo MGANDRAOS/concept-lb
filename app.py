@@ -1216,6 +1216,7 @@ def plan_detail_route(plan_id: str):
             (plan_id,),
         ).fetchall()
         sections_with_history = {r["section_id"] for r in rows}
+        pending_section_ids = set((plan.pending_edits or {}).keys())
     finally:
         conn.close()
 
@@ -1232,6 +1233,7 @@ def plan_detail_route(plan_id: str):
         sections=sections_summary,
         stale_section_ids=plan.stale_section_ids or [],
         sections_with_history=sections_with_history,
+        pending_section_ids=pending_section_ids,
     )
 
 

@@ -252,3 +252,102 @@ body.with-section-sidebar .content {
   color: #fef2f2;
   border-left-color: #dc2626;
 }
+
+.edit-modal-wide { width: min(720px, 96vw); }
+
+.edit-blocks-container { display: flex; flex-direction: column; gap: 12px; }
+
+.edit-block {
+  border: 1px solid var(--border, #d4d4d8);
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 10px 12px;
+}
+
+.edit-block-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7a9a;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+
+.edit-block textarea,
+.edit-block input[type="text"] {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border, #d4d4d8);
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.edit-block textarea { min-height: 44px; }
+
+.edit-bullet-row,
+.edit-menu-item-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
+.edit-bullet-row textarea,
+.edit-menu-item-row textarea,
+.edit-menu-item-row input {
+  flex: 1;
+}
+
+.edit-bullet-row .btn-remove,
+.edit-menu-item-row .btn-remove,
+.edit-block-add {
+  border: 1px solid var(--border, #d4d4d8);
+  background: #fff;
+  color: var(--text2, #27272a);
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.edit-block-add { margin-top: 6px; font-weight: 600; }
+.edit-bullet-row .btn-remove:hover,
+.edit-menu-item-row .btn-remove:hover { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+
+.edit-block-readonly {
+  font-size: 12px;
+  color: #525f7a;
+  background: #fff;
+  border: 1px dashed #d4d4d8;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.pending-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.regen-plan-btn {
+  display: block;
+  width: 100%;
+  margin: 4px 0 14px;
+  font-size: 13px;
+  padding: 9px 14px;
+  text-align: center;
+}
+.regen-plan-btn[hidden] { display: none; }

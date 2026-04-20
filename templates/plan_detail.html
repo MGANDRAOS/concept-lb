@@ -108,6 +108,15 @@
 </head>
 <body class="with-section-sidebar">
   <aside class="section-list-panel">
+    <button
+      type="button"
+      class="btn btn-primary regen-plan-btn"
+      id="regenPlanBtn"
+      data-plan-id="{{ plan.id }}"
+      {% if not pending_section_ids %}hidden{% endif %}
+    >
+      ⚡ Regenerate Plan<span id="regenPlanCount">{% if pending_section_ids %} ({{ pending_section_ids|length }}){% endif %}</span>
+    </button>
     <h3>Plan sections</h3>
     {% for section in sections or [] %}
       <div class="section-row" data-section-id="{{ section.id }}">
@@ -115,6 +124,9 @@
           {{ section.title }}
         </div>
         <div class="section-row-actions">
+          {% if section.id in (pending_section_ids or []) %}
+            <span class="pending-badge" title="You have queued an edit for this section.">Pending</span>
+          {% endif %}
           {% if section.id in (stale_section_ids or []) %}
             <span class="stale-badge" title="This section may be out of date. Review or regenerate.">Stale</span>
           {% endif %}
@@ -308,37 +320,44 @@
   </script>
 
 <div class="edit-modal-backdrop" id="editModalBackdrop" hidden>
-  <div class="edit-modal" role="dialog" aria-labelledby="editModalTitle" aria-modal="true">
+  <div class="edit-modal edit-modal-wide" role="dialog" aria-labelledby="editModalTitle" aria-modal="true">
     <div class="edit-modal-header">
       <h2 id="editModalTitle">Edit section</h2>
       <button type="button" class="edit-modal-close" id="editModalClose" aria-label="Close">×</button>
     </div>
     <div class="edit-modal-body">
       <div class="edit-modal-field">
-        <label for="editSectionTitle">Section</label>
+        <label>Section</label>
         <input type="text" id="editSectionTitle" disabled />
       </div>
       <div class="edit-modal-field">
-        <label for="editUserComment">What would you like to change?</label>
-        <textarea id="editUserComment" rows="6"
-          placeholder="e.g., Make the tone more conservative. Emphasize the breakfast program. Remove the reference to X."></textarea>
+        <label>Current content (edit directly)</label>
+        <div id="editBlocksContainer" class="edit-blocks-container"></div>
       </div>
-      <div class="edit-modal-field checkbox-row">
-        <label>
-          <input type="checkbox" id="editRegenerateImage" />
-          Regenerate the section image
-        </label>
+      <div class="edit-modal-field">
+        <label for="editUserComment">Additional guidance (optional)</label>
+        <textarea id="editUserComment" rows="3"
+          placeholder="Any extra direction for the AI when regenerating, e.g., 'shorter tone' or 'emphasize breakfast'."></textarea>
       </div>
       <div class="edit-modal-error" id="editModalError" hidden></div>
     </div>
     <div class="edit-modal-footer">
       <button type="button" class="btn btn-secondary" id="editModalCancel">Cancel</button>
+      <button type="button" class="btn btn-secondary" id="editModalQueue">Save to queue</button>
       <button type="button" class="btn btn-primary" id="editModalSubmit">
-        <span id="editModalSubmitLabel">Regenerate</span>
+        <span id="editModalSubmitLabel">Regenerate now</span>
       </button>
     </div>
   </div>
 </div>
+<script>
+  window.__CURRENT_PLAN_SECTIONS__ = (function() {
+    const list = {{ (plan.plan or {}).get('sections') | tojson | safe }};
+    const map = {};
+    (list || []).forEach(function(s) { if (s && s.id) map[s.id] = s; });
+    return map;
+  })();
+</script>
 <script src="/js/section_edit.js"></script>
 </body>
 </html>
