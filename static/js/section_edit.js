@@ -243,6 +243,7 @@
     errorBox.textContent = '';
     submitBtn.disabled = false;
     submitLabel.textContent = 'Regenerate now';
+    if (queueBtn) queueBtn.disabled = false;
 
     // Deep-clone blocks from the injected map
     const sectionData = (window.__CURRENT_PLAN_SECTIONS__ || {})[sectionId];
@@ -432,6 +433,14 @@
       }
       const sectionTitle = currentSectionTitle || 'Section';
       const pid = currentPlanId;
+      const sid = currentSectionId;
+      // Remember queued blocks so reopening the section shows the user's edit
+      const map = window.__CURRENT_PLAN_SECTIONS__ || {};
+      if (sid && map[sid]) {
+        map[sid].blocks = JSON.parse(JSON.stringify(currentBlocks || []));
+        window.__CURRENT_PLAN_SECTIONS__ = map;
+      }
+      queueBtn.disabled = false;
       closeModal();
       showToast(`Section "${sectionTitle}" queued`);
       refetchPending(pid);
