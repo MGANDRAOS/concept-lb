@@ -129,6 +129,16 @@ def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
         except Exception:
             stale_ids = []
 
+    pending_raw = r["pending_edits_json"] if "pending_edits_json" in r.keys() else None
+    pending_edits: dict = {}
+    if pending_raw:
+        try:
+            p = json.loads(pending_raw)
+            if isinstance(p, dict):
+                pending_edits = p
+        except Exception:
+            pending_edits = {}
+
     return PlanView(
         id=r["id"],
         created_at=r["created_at"],
@@ -148,6 +158,7 @@ def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
         latency_ms=r["latency_ms"],
         error_message=r["error_message"],
         stale_section_ids=stale_ids,
+        pending_edits=pending_edits,
     )
 
 

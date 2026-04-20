@@ -65,6 +65,7 @@ class PlanView(BaseModel):
     latency_ms: Optional[int] = None
     error_message: Optional[str] = None
     stale_section_ids: list[str] = Field(default_factory=list)
+    pending_edits: Dict[str, Any] = Field(default_factory=dict)
 
 
 def utc_now_iso() -> str:
