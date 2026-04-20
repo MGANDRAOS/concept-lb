@@ -80,6 +80,7 @@ def init_db(instance_path: str) -> str:
         conn.executescript(SCHEMA_SQL)
         _add_column_if_missing(conn, "plans", "stale_section_ids", "TEXT")
         _add_column_if_missing(conn, "plans", "pending_edits_json", "TEXT")
+        _add_column_if_missing(conn, "plans", "deleted_section_ids_json", "TEXT")
         conn.commit()
     finally:
         conn.close()

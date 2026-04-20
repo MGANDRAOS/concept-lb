@@ -38,13 +38,18 @@ def regenerate_full_plan(
     model_name: Optional[str] = None,
     chunk_size: int = 4,
     max_output_tokens: int = 8000,
+    deleted_section_ids: Optional[List[str]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
     """Regenerate all applicable sections using pending_edits as strong context.
+
+    Sections whose id appears in `deleted_section_ids` are skipped entirely —
+    they remain absent from the output.
 
     Returns (new_sections, used_edit_section_ids).
     """
     concept_with_feedback = dict(concept or {})
     used_edit_ids: List[str] = sorted(pending_edits.keys()) if pending_edits else []
+    deleted_set = set(deleted_section_ids or [])
 
     if pending_edits:
         edits_text = "\n".join(
@@ -56,6 +61,9 @@ def regenerate_full_plan(
 
     included_specs = [s for s in SECTION_SPECS if should_include_section(s, concept)]
     included_specs.sort(key=lambda s: s.get("order", 0))
+    # Skip any section the user has explicitly deleted.
+    if deleted_set:
+        included_specs = [s for s in included_specs if s.get("id") not in deleted_set]
 
     new_sections: List[Dict[str, Any]] = []
     chunks = [

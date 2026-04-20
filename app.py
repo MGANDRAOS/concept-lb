@@ -806,6 +806,10 @@ def api_regenerate_section(plan_id: str, section_id: str):
         if plan_view is None:
             return jsonify({"ok": False, "error": "plan not found"}), 404
 
+        if section_id in (plan_view.deleted_section_ids or []):
+            return jsonify({"ok": False,
+                            "error": "section is deleted; restore it first"}), 400
+
         plan_data = plan_view.plan or {}
         existing_sections = plan_data.get("sections") or []
         existing_section = next(
@@ -1124,6 +1128,7 @@ def api_regenerate_full_plan(plan_id: str):
                 existing_sections=existing_sections,
                 pending_edits=edits,
                 model_name=pv.model,
+                deleted_section_ids=pv.deleted_section_ids or [],
             )
         except ValueError as ve:
             return jsonify({"ok": False, "error": str(ve)}), 502
@@ -1193,6 +1198,185 @@ def api_regenerate_full_plan(plan_id: str):
         conn.close()
 
 
+@app.route("/api/plans/<plan_id>/sections/<section_id>", methods=["DELETE"])
+def api_delete_section(plan_id: str, section_id: str):
+    """Remove a section from the plan entirely. The section is:
+    - removed from plan_json.sections
+    - added to deleted_section_ids_json so future regens skip it
+    - snapshotted as a revision with user_comment "(deleted — pre-delete snapshot)"
+    - cleared from pending_edits_json and stale_section_ids
+    """
+    conn = db_conn()
+    try:
+        pv = get_plan(conn, plan_id)
+        if pv is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+
+        plan_data = dict(pv.plan or {})
+        existing_sections = plan_data.get("sections") or []
+        target = next((s for s in existing_sections if s.get("id") == section_id), None)
+        if target is None and section_id not in (pv.deleted_section_ids or []):
+            return jsonify({"ok": False, "error": f"section not found: {section_id}"}), 404
+
+        # Snapshot pre-delete content for potential restore
+        if target:
+            img = next(
+                (b for b in (target.get("blocks") or []) if b.get("type") == "image"),
+                None,
+            )
+            insert_revision(
+                conn,
+                plan_id=plan_id,
+                section_id=section_id,
+                section_title=target.get("title", section_id),
+                user_comment="(deleted — pre-delete snapshot)",
+                blocks=target.get("blocks") or [],
+                image_url=(img or {}).get("url"),
+                image_alt=(img or {}).get("alt_text"),
+            )
+
+        plan_data["sections"] = [s for s in existing_sections if s.get("id") != section_id]
+
+        deleted_set = set(pv.deleted_section_ids or [])
+        deleted_set.add(section_id)
+
+        # Drop any pending edit and stale flag for this section
+        pending = dict(pv.pending_edits or {})
+        pending.pop(section_id, None)
+        stale = [s for s in (pv.stale_section_ids or []) if s != section_id]
+
+        new_plan_html = render_template("plan_view.html", plan=plan_data)
+        now = datetime.utcnow().isoformat() + "Z"
+        conn.execute(
+            """
+            UPDATE plans
+            SET plan_json = ?,
+                plan_html = ?,
+                deleted_section_ids_json = ?,
+                pending_edits_json = ?,
+                stale_section_ids = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                json.dumps(plan_data, ensure_ascii=False),
+                new_plan_html,
+                json.dumps(sorted(deleted_set)),
+                (json.dumps(pending, ensure_ascii=False) if pending else None),
+                (json.dumps(stale) if stale else None),
+                now,
+                plan_id,
+            ),
+        )
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "plan_html": new_plan_html,
+            "deleted_section_ids": sorted(deleted_set),
+            "pending_section_ids": sorted(pending.keys()),
+        })
+    finally:
+        conn.close()
+
+
+@app.route("/api/plans/<plan_id>/sections/<section_id>/restore", methods=["POST"])
+def api_restore_deleted_section(plan_id: str, section_id: str):
+    """Undo a section deletion: un-mark from deleted set and reinsert the
+    most-recent pre-delete snapshot into plan_json at its proper order.
+    """
+    conn = db_conn()
+    try:
+        pv = get_plan(conn, plan_id)
+        if pv is None:
+            return jsonify({"ok": False, "error": "plan not found"}), 404
+
+        deleted_set = set(pv.deleted_section_ids or [])
+        if section_id not in deleted_set:
+            return jsonify({"ok": False, "error": f"section is not deleted: {section_id}"}), 400
+
+        # Find the most recent "deleted — pre-delete snapshot" revision.
+        revs = revisions_for_section(conn, plan_id=plan_id, section_id=section_id)
+        snapshot = next(
+            (r for r in revs
+             if (r.user_comment or "").startswith("(deleted")),
+            None,
+        )
+        # Fall back to the newest revision if no explicit delete snapshot
+        if snapshot is None and revs:
+            snapshot = revs[0]
+
+        if snapshot is None:
+            return jsonify({"ok": False,
+                            "error": "no prior content found to restore; use Regenerate instead"}), 400
+
+        restored_blocks = list(snapshot.blocks)
+        if snapshot.image_url:
+            restored_blocks = [b for b in restored_blocks if b.get("type") != "image"]
+            restored_blocks.insert(0, {
+                "type": "image",
+                "url": snapshot.image_url,
+                "alt_text": snapshot.image_alt or "",
+                "caption": f"Visual representation: {snapshot.section_title}",
+            })
+        restored_section = {
+            "id": section_id,
+            "title": snapshot.section_title,
+            "blocks": restored_blocks,
+        }
+
+        # Reinsert at the right position using SECTION_SPECS.order.
+        target_order = next(
+            (s.get("order", 999) for s in SECTION_SPECS if s.get("id") == section_id),
+            999,
+        )
+        plan_data = dict(pv.plan or {})
+        existing_sections = list(plan_data.get("sections") or [])
+        insert_at = len(existing_sections)
+        for i, sec in enumerate(existing_sections):
+            sec_order = next(
+                (s.get("order", 999) for s in SECTION_SPECS if s.get("id") == sec.get("id")),
+                999,
+            )
+            if sec_order > target_order:
+                insert_at = i
+                break
+        existing_sections.insert(insert_at, restored_section)
+        plan_data["sections"] = existing_sections
+
+        deleted_set.discard(section_id)
+
+        new_plan_html = render_template("plan_view.html", plan=plan_data)
+        now = datetime.utcnow().isoformat() + "Z"
+        conn.execute(
+            """
+            UPDATE plans
+            SET plan_json = ?,
+                plan_html = ?,
+                deleted_section_ids_json = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                json.dumps(plan_data, ensure_ascii=False),
+                new_plan_html,
+                (json.dumps(sorted(deleted_set)) if deleted_set else None),
+                now,
+                plan_id,
+            ),
+        )
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "plan_html": new_plan_html,
+            "section": restored_section,
+            "deleted_section_ids": sorted(deleted_set),
+        })
+    finally:
+        conn.close()
+
+
 @app.route("/plans/<plan_id>", methods=["GET"])
 def plan_detail_route(plan_id: str):
     conn = db_conn()
@@ -1227,6 +1411,14 @@ def plan_detail_route(plan_id: str):
             "title": sec.get("title"),
         })
 
+    # Deleted sections: show in sidebar with Restore affordance. Title comes
+    # from SECTION_SPECS (canonical) since the section is no longer in plan_json.
+    spec_title_by_id = {s["id"]: s.get("title", s["id"]) for s in SECTION_SPECS}
+    deleted_sections_summary = [
+        {"id": sid, "title": spec_title_by_id.get(sid, sid)}
+        for sid in (plan.deleted_section_ids or [])
+    ]
+
     return render_template(
         "plan_detail.html",
         plan=plan.model_dump(),
@@ -1234,6 +1426,7 @@ def plan_detail_route(plan_id: str):
         stale_section_ids=plan.stale_section_ids or [],
         sections_with_history=sections_with_history,
         pending_section_ids=pending_section_ids,
+        deleted_sections=deleted_sections_summary,
     )
 
 

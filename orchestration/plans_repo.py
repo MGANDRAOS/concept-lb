@@ -139,6 +139,16 @@ def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
         except Exception:
             pending_edits = {}
 
+    deleted_raw = r["deleted_section_ids_json"] if "deleted_section_ids_json" in r.keys() else None
+    deleted_ids: list = []
+    if deleted_raw:
+        try:
+            d = json.loads(deleted_raw)
+            if isinstance(d, list):
+                deleted_ids = [str(x) for x in d]
+        except Exception:
+            deleted_ids = []
+
     return PlanView(
         id=r["id"],
         created_at=r["created_at"],
@@ -159,6 +169,7 @@ def get_plan(conn: sqlite3.Connection, plan_id: str) -> Optional[PlanView]:
         error_message=r["error_message"],
         stale_section_ids=stale_ids,
         pending_edits=pending_edits,
+        deleted_section_ids=deleted_ids,
     )
 
 
