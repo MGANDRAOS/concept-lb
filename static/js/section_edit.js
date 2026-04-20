@@ -242,8 +242,8 @@
     commentInput.value = '';
     errorBox.hidden = true;
     errorBox.textContent = '';
-    submitBtn.disabled = false;
-    submitLabel.textContent = 'Regenerate now';
+    if (submitBtn) submitBtn.disabled = false;
+    if (submitLabel) submitLabel.textContent = 'Regenerate now';
     if (queueBtn) queueBtn.disabled = false;
     if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = '🗑 Delete section'; }
 
@@ -448,7 +448,7 @@
       }
       queueBtn.disabled = false;
       closeModal();
-      showToast(`Section "${sectionTitle}" queued`);
+      showToast(`Edit saved. Click Regenerate Plan when you're done queueing changes.`);
       refetchPending(pid);
     } catch (err) {
       showError(`Network error: ${err.message || err}`);
@@ -729,8 +729,8 @@
 
   closeBtn.addEventListener('click', closeModal);
   cancelBtn.addEventListener('click', closeModal);
-  submitBtn.addEventListener('click', submit);
-  queueBtn.addEventListener('click', queue);
+  if (submitBtn) submitBtn.addEventListener('click', submit);
+  if (queueBtn) queueBtn.addEventListener('click', queue);
 
   const regenPlanBtn = document.getElementById('regenPlanBtn');
   if (regenPlanBtn) regenPlanBtn.addEventListener('click', regenerateFullPlan);
