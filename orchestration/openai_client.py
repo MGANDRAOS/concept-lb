@@ -139,6 +139,9 @@ def call_model_json(
     try:
         return json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        raise ValueError(
+        err = ValueError(
             f"Model did not return valid JSON. Raw output:\n{raw_text[:500]}"
-        ) from exc
+        )
+        # Attach the full raw text so callers can attempt repair without re-calling the model.
+        err.raw_text = raw_text
+        raise err from exc

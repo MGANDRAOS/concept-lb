@@ -214,6 +214,20 @@ def generate_sections_bundle(
         assumptions_instruction=assumptions_instruction,
     )
 
+    expected_hint = """
+Expected JSON:
+{
+  "sections": [ { "id":"...","title":"...","blocks":[...] } ],
+  "assumptions_table": [ { "label":"...","value":"...","explanation":"..." } ],
+  "disclaimer": "..."
+}
+- sections must be non-empty list
+- titles and ids must match specs
+""".strip()
+
+    last_raw_text = None
+    result = None
+
     # Attempt 1
     try:
         result = call_model_json(
@@ -223,30 +237,37 @@ def generate_sections_bundle(
             reasoning_effort=None,
             max_output_tokens=max_output_tokens,
         )
-    except Exception:
-        # Attempt 2: slightly larger token budget
-        result = call_model_json(
-            system_prompt=BUNDLE_SYSTEM_PROMPT + "\n\nIMPORTANT: Keep JSON compact.",
-            user_prompt=user_prompt,
-            model_name=model_name,
-            reasoning_effort=None,
-            max_output_tokens=max(max_output_tokens, 10000),
-        )
+    except Exception as e1:
+        last_raw_text = getattr(e1, "raw_text", None)
 
-    # Repair if shape broken
+    # Attempt 2: slightly larger token budget
+    if result is None:
+        try:
+            result = call_model_json(
+                system_prompt=BUNDLE_SYSTEM_PROMPT + "\n\nIMPORTANT: Keep JSON compact.",
+                user_prompt=user_prompt,
+                model_name=model_name,
+                reasoning_effort=None,
+                max_output_tokens=max(max_output_tokens, 10000),
+            )
+        except Exception as e2:
+            last_raw_text = getattr(e2, "raw_text", last_raw_text)
+
+    # Attempt 3 (last-resort): if we have malformed raw text, feed it to repair_json.
+    if result is None and last_raw_text:
+        try:
+            result = repair_json(
+                broken_output=last_raw_text,
+                expected_hint=expected_hint,
+                model_name=model_name,
+            )
+        except Exception:
+            pass  # fall through to shape-repair below
+
+    # Repair if shape broken (or still nothing at all)
     if not isinstance(result, dict) or "sections" not in result:
-        expected_hint = """
-Expected JSON:
-{
-  "sections": [ { "id":"...","title":"...","blocks":[...] } ],
-  "assumptions_table": [ { "label":"...","value":"...","explanation":"..." } ],
-  "disclaimer": "..."
-}
-- sections must be non-empty list
-- titles and ids must match specs
-"""
         result = repair_json(
-            broken_output="Previous output invalid. Regenerate valid JSON bundle.",
+            broken_output=(last_raw_text or "Previous output invalid. Regenerate valid JSON bundle."),
             expected_hint=expected_hint,
             model_name=model_name,
         )
