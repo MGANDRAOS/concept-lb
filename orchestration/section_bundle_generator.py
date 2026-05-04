@@ -240,7 +240,8 @@ Expected JSON:
     except Exception as e1:
         last_raw_text = getattr(e1, "raw_text", None)
 
-    # Attempt 2: slightly larger token budget
+    # Attempt 2: real escalation (2x). The original cap is the most common reason
+    # for truncation, so doubling it is the change that actually moves the needle.
     if result is None:
         try:
             result = call_model_json(
@@ -248,7 +249,7 @@ Expected JSON:
                 user_prompt=user_prompt,
                 model_name=model_name,
                 reasoning_effort=None,
-                max_output_tokens=max(max_output_tokens, 10000),
+                max_output_tokens=max_output_tokens * 2,
             )
         except Exception as e2:
             last_raw_text = getattr(e2, "raw_text", last_raw_text)
