@@ -273,16 +273,63 @@ Expected JSON:
             model_name=model_name,
         )
 
-    sections = result.get("sections")
-    
-    expected_ids = [s["id"] for s in section_specs]
-    returned_ids = [s.get("id") for s in sections]
+    sections = result.get("sections") or []
 
-    if returned_ids != expected_ids:
-        raise ValueError(
-            f"Section order mismatch. Expected {expected_ids}, got {returned_ids}"
+    expected_ids = [s["id"] for s in section_specs]
+
+    # Recovery: if any sections are missing (commonly because the original call
+    # truncated and json-repair closed the brackets cleanly with a partial bundle),
+    # make one follow-up call asking only for the missing sections and merge them in.
+    by_id: Dict[str, Dict[str, Any]] = {
+        s.get("id"): s for s in sections
+        if isinstance(s, dict) and s.get("id") in expected_ids
+    }
+    missing_ids = [sid for sid in expected_ids if sid not in by_id]
+
+    if missing_ids:
+        missing_specs = [s for s in section_specs if s["id"] in missing_ids]
+        recovery_user_prompt = BUNDLE_USER_PROMPT_TEMPLATE.format(
+            concept_json=f"{anchors_block}\n{market_ctx_block}\n{concept_json}",
+            specs_json=json.dumps(missing_specs, ensure_ascii=False),
+            assumptions_instruction="",  # don't redo assumptions in recovery
         )
-        
+        try:
+            recovery = call_model_json(
+                system_prompt=BUNDLE_SYSTEM_PROMPT,
+                user_prompt=recovery_user_prompt,
+                model_name=model_name,
+                reasoning_effort=None,
+                max_output_tokens=max_output_tokens * 2,
+            )
+            for s in (recovery.get("sections") or []):
+                if isinstance(s, dict) and s.get("id") in missing_ids:
+                    by_id[s["id"]] = s
+        except Exception as recov_exc:
+            recov_raw = getattr(recov_exc, "raw_text", None)
+            if recov_raw:
+                try:
+                    repaired = repair_json(
+                        broken_output=recov_raw,
+                        expected_hint=expected_hint,
+                        model_name=model_name,
+                    )
+                    for s in (repaired.get("sections") or []):
+                        if isinstance(s, dict) and s.get("id") in missing_ids:
+                            by_id[s["id"]] = s
+                except Exception:
+                    pass
+
+    # Reassemble in spec order; only include ids we actually have.
+    sections = [by_id[sid] for sid in expected_ids if sid in by_id]
+    result["sections"] = sections
+
+    still_missing = [sid for sid in expected_ids if sid not in by_id]
+    if still_missing:
+        raise ValueError(
+            f"Bundle missing sections after recovery: {still_missing}. "
+            f"Got: {list(by_id.keys())}."
+        )
+
     if not isinstance(sections, list) or len(sections) == 0:
         raise ValueError("Bundle output missing non-empty 'sections'.")
 
