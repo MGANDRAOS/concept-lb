@@ -1,6 +1,8 @@
 import json
 from typing import Any, Dict, Optional
 
+import json_repair
+
 from orchestration.openai_client import call_model_json
 
 
@@ -17,53 +19,23 @@ RULES:
 """
 
 
-def _local_repair_truncated_json(text: str) -> Optional[Dict[str, Any]]:
+def _local_repair(text: str) -> Optional[Dict[str, Any]]:
     """
-    Fast in-process repair for the most common LLM truncation pattern: an unterminated
-    string followed by unclosed brackets/braces. Walks the text, tracks string state and
-    bracket stack, then closes whatever's still open and tries json.loads. Returns the
-    parsed dict on success, or None if the result still isn't a valid JSON object.
+    Fast in-process repair using the json-repair library, which handles the common
+    LLM JSON malformations: unescaped quotes inside strings, missing commas, smart
+    quotes, trailing commas, and truncation (unterminated strings + unclosed brackets).
+    Returns the parsed dict on success, or None if the input doesn't look like a JSON
+    object or repair didn't yield one.
     """
     if not text:
         return None
-
-    stripped = text.lstrip()
-    if not stripped.startswith("{"):
+    if not text.lstrip().startswith("{"):
         return None
-
-    stack = []
-    in_string = False
-    escape = False
-
-    for c in text:
-        if escape:
-            escape = False
-            continue
-        if in_string:
-            if c == "\\":
-                escape = True
-            elif c == '"':
-                in_string = False
-            continue
-        if c == '"':
-            in_string = True
-        elif c == "{" or c == "[":
-            stack.append(c)
-        elif c == "}" or c == "]":
-            if stack:
-                stack.pop()
-
-    repaired = text
-    if in_string:
-        repaired += '"'
-    for opener in reversed(stack):
-        repaired += "}" if opener == "{" else "]"
-
     try:
-        parsed = json.loads(repaired)
-    except json.JSONDecodeError:
+        parsed = json_repair.loads(text)
+    except Exception:
         return None
-    return parsed if isinstance(parsed, dict) else None
+    return parsed if isinstance(parsed, dict) and parsed else None
 
 
 def repair_json(
@@ -72,10 +44,10 @@ def repair_json(
     expected_hint: str,
     model_name: str = "gpt-5.2",
 ) -> Dict[str, Any]:
-    # Fast path: close unterminated string + dangling brackets locally. No API call.
-    # When this succeeds the caller's shape-validation decides whether the result is
-    # usable; if it isn't, the caller raises and the user sees the failure faster.
-    local = _local_repair_truncated_json(broken_output)
+    # Fast path: deterministic local repair, no API call. Handles the common
+    # LLM malformations (unescaped quotes, missing commas, truncation). When
+    # this returns a dict, the caller's shape-validation decides if it's usable.
+    local = _local_repair(broken_output)
     if local is not None:
         return local
 
