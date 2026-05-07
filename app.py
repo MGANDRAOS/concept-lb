@@ -88,6 +88,64 @@ def _chunk_list(items, chunk_size: int):
         yield items[i : i + chunk_size]
 
 
+def _classify_api_error(e: Exception):
+    """
+    Returns (user_message, http_status, error_type_label) for an upstream API error.
+
+    Detects OpenAI quota exhaustion and rate limits across the multiple shapes the
+    SDK uses (exception class name, error.code, error.type, free-text message) and
+    returns a friendly message instead of leaking the raw exception. Other errors
+    fall through to a generic "ClassName: message" representation.
+    """
+    err_type = type(e).__name__
+    raw_msg = str(e) or err_type
+
+    api_code = ""
+    api_type = ""
+    api_msg = ""
+    try:
+        body = getattr(e, "response", None)
+        if body is not None and hasattr(body, "json"):
+            data = body.json() or {}
+            api_err = data.get("error") or {}
+            api_code = (api_err.get("code") or "").lower()
+            api_type = (api_err.get("type") or "").lower()
+            api_msg = api_err.get("message") or ""
+    except Exception:
+        pass
+
+    e_code = (getattr(e, "code", "") or "").lower()
+    haystack = " ".join([raw_msg, api_msg]).lower()
+
+    is_quota = (
+        "insufficient_quota" in (api_code, api_type, e_code)
+        or "insufficient_quota" in haystack
+        or "exceeded your current quota" in haystack
+    )
+    is_rate_limit = (
+        "ratelimit" in err_type.lower()
+        or api_code == "rate_limit_exceeded"
+        or e_code == "rate_limit_exceeded"
+    )
+
+    if is_quota:
+        return (
+            "OpenAI quota exceeded. The API account is out of credit — "
+            "please top it up in the OpenAI billing dashboard and try again.",
+            429,
+            "QuotaExceeded",
+        )
+    if is_rate_limit:
+        return (
+            "OpenAI rate limit hit. Please wait a moment and retry.",
+            429,
+            "RateLimited",
+        )
+
+    final_msg = api_msg or raw_msg
+    return (f"{err_type}: {final_msg}", 502, err_type)
+
+
 try:
     from zoneinfo import ZoneInfo  # Python 3.9+
     _BEIRUT_TZ = ZoneInfo("Asia/Beirut")
@@ -567,11 +625,11 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
             return
 
         except Exception as e:
-            import traceback, io
-            buf = io.StringIO()
-            traceback.print_exc(file=buf)
-            full_tb = buf.getvalue()
-            err = f"{type(e).__name__}: {e}\n\nTRACEBACK:\n{full_tb}"
+            import traceback
+            # Print the full traceback to server logs for debugging — but keep
+            # the user-facing message concise and actionable.
+            traceback.print_exc()
+            user_msg, _status, _label = _classify_api_error(e)
 
             # If the user asked to cancel, honour that intent: don't leave a
             # "failed" record in the DB. Treat it as a clean cancellation.
@@ -593,7 +651,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
                     plan=None,
                     plan_html=None,
                     status="failed",
-                    error_message=err,
+                    error_message=user_msg,
                     model_name=model_name,
                 )
             except Exception:
@@ -602,9 +660,9 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 
             with JOBS_LOCK:
                 JOBS[job_id]["status"] = "error"
-                JOBS[job_id]["error"] = err
+                JOBS[job_id]["error"] = user_msg
 
-            _job_update(job_id, message="Failed ❌", log=f"ERROR: {err}")
+            _job_update(job_id, message="Failed ❌", log=f"ERROR: {user_msg}")
 
 
 @app.route("/api/generate-job", methods=["POST"])
@@ -835,24 +893,11 @@ def api_regenerate_section(plan_id: str, section_id: str):
         except Exception as e:
             # Surface OpenAI errors (rate limits, quota, context limits, auth) and
             # any other upstream failure as structured JSON so the UI can display them.
-            err_type = type(e).__name__
-            msg = str(e) or err_type
-            # Try to extract a cleaner message from OpenAI-style errors
-            try:
-                body = getattr(e, "response", None)
-                if body is not None and hasattr(body, "json"):
-                    data = body.json()
-                    api_err = (data or {}).get("error") or {}
-                    api_msg = api_err.get("message")
-                    if api_msg:
-                        msg = api_msg
-            except Exception:
-                pass
-            status_code = 429 if "RateLimit" in err_type or "insufficient_quota" in msg else 502
+            user_msg, status_code, err_label = _classify_api_error(e)
             return jsonify({
                 "ok": False,
-                "error": f"{err_type}: {msg}",
-                "error_type": err_type,
+                "error": user_msg,
+                "error_type": err_label,
             }), status_code
 
         # Optionally regenerate the image
@@ -1133,11 +1178,9 @@ def api_regenerate_full_plan(plan_id: str):
         except ValueError as ve:
             return jsonify({"ok": False, "error": str(ve)}), 502
         except Exception as e:
-            err_type = type(e).__name__
-            msg = str(e) or err_type
-            status = 429 if "RateLimit" in err_type else 502
-            return jsonify({"ok": False, "error": f"{err_type}: {msg}",
-                            "error_type": err_type}), status
+            user_msg, status, err_label = _classify_api_error(e)
+            return jsonify({"ok": False, "error": user_msg,
+                            "error_type": err_label}), status
 
         # Re-attach preserved images (insert at position 0)
         for sec in new_sections:
