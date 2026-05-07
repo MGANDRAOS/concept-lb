@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, Optional
 
 from orchestration.openai_client import call_model_json
+from orchestration.repair import repair_json
 from orchestration.section_bundle_generator import (
     BUNDLE_SYSTEM_PROMPT,
     _validate_required_blocks,
@@ -97,12 +98,53 @@ def regenerate_section(
         user_comment=user_comment or "",
     )
 
-    result = call_model_json(
-        system_prompt=BUNDLE_SYSTEM_PROMPT,
-        user_prompt=user_prompt,
-        model_name=model_name or _REGEN_DEFAULT_MODEL,
-        max_output_tokens=_REGEN_MAX_TOKENS,
-    )
+    result = None
+    last_raw_text: Optional[str] = None
+    chosen_model = model_name or _REGEN_DEFAULT_MODEL
+
+    # Attempt 1: normal budget.
+    try:
+        result = call_model_json(
+            system_prompt=BUNDLE_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            model_name=chosen_model,
+            max_output_tokens=_REGEN_MAX_TOKENS,
+        )
+    except Exception as e1:
+        last_raw_text = getattr(e1, "raw_text", None)
+
+    # Attempt 2: real escalation. Truncation is the most common cause of malformed
+    # JSON here, especially for verbose sections like menu_structure.
+    if result is None:
+        try:
+            result = call_model_json(
+                system_prompt=BUNDLE_SYSTEM_PROMPT + "\n\nIMPORTANT: Keep JSON compact.",
+                user_prompt=user_prompt,
+                model_name=chosen_model,
+                max_output_tokens=_REGEN_MAX_TOKENS * 2,
+            )
+        except Exception as e2:
+            last_raw_text = getattr(e2, "raw_text", last_raw_text)
+
+    # Attempt 3: repair pipeline. json-repair fast path first; falls through to
+    # a model-based repair if the local parse doesn't yield a usable dict.
+    if result is None and last_raw_text:
+        expected_hint = (
+            "Expected JSON: { \"sections\": [ "
+            f"{{ \"id\": \"{section_id}\", \"title\": \"...\", \"blocks\": [...] }} "
+            "] } — exactly ONE section with the given id."
+        )
+        try:
+            result = repair_json(
+                broken_output=last_raw_text,
+                expected_hint=expected_hint,
+                model_name=chosen_model,
+            )
+        except Exception:
+            result = None
+
+    if not isinstance(result, dict):
+        raise ValueError("Section regeneration failed: no parseable response after retries.")
 
     sections = result.get("sections")
     if not isinstance(sections, list) or not sections:
