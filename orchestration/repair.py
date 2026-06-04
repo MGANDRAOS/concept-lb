@@ -1,8 +1,6 @@
-import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-import json_repair
-
+from orchestration.json_utils import local_json_repair
 from orchestration.openai_client import call_model_json
 
 
@@ -19,25 +17,6 @@ RULES:
 """
 
 
-def _local_repair(text: str) -> Optional[Dict[str, Any]]:
-    """
-    Fast in-process repair using the json-repair library, which handles the common
-    LLM JSON malformations: unescaped quotes inside strings, missing commas, smart
-    quotes, trailing commas, and truncation (unterminated strings + unclosed brackets).
-    Returns the parsed dict on success, or None if the input doesn't look like a JSON
-    object or repair didn't yield one.
-    """
-    if not text:
-        return None
-    if not text.lstrip().startswith("{"):
-        return None
-    try:
-        parsed = json_repair.loads(text)
-    except Exception:
-        return None
-    return parsed if isinstance(parsed, dict) and parsed else None
-
-
 def repair_json(
     *,
     broken_output: str,
@@ -47,7 +26,7 @@ def repair_json(
     # Fast path: deterministic local repair, no API call. Handles the common
     # LLM malformations (unescaped quotes, missing commas, truncation). When
     # this returns a dict, the caller's shape-validation decides if it's usable.
-    local = _local_repair(broken_output)
+    local = local_json_repair(broken_output)
     if local is not None:
         return local
 

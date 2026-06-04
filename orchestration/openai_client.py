@@ -5,6 +5,8 @@ from typing import Any, Dict, Optional
 
 from openai import OpenAI
 
+from orchestration.json_utils import local_json_repair, looks_truncated
+
 
 # ── Token usage tracker (thread-safe accumulator) ──────────────
 class TokenTracker:
@@ -139,9 +141,35 @@ def call_model_json(
     try:
         return json.loads(raw_text)
     except json.JSONDecodeError as exc:
+        # Two very different failure modes need different recovery:
+        #   • Malformation on a COMPLETE response (unescaped quote, missing
+        #     comma) — repair it in place so EVERY caller self-heals, not just
+        #     the ones that remembered to wrap this call.
+        #   • Truncation (hit the output-token cap) — content is genuinely
+        #     incomplete; raise so the caller can escalate (retry with more
+        #     tokens). Local repair would close brackets around the missing
+        #     content and silently ship a short result.
+        incomplete = getattr(response, "incomplete_details", None)
+        truncated = (
+            getattr(response, "status", None) == "incomplete"
+            or (incomplete is not None
+                and getattr(incomplete, "reason", None) == "max_output_tokens")
+            or looks_truncated(raw_text)
+        )
+        if not truncated:
+            repaired = local_json_repair(raw_text)
+            if repaired is not None:
+                print(
+                    "Note: call_model_json recovered malformed JSON via local "
+                    f"repair ({len(raw_text)} chars)."
+                )
+                return repaired
+
         err = ValueError(
             f"Model did not return valid JSON. Raw output:\n{raw_text[:500]}"
         )
-        # Attach the full raw text so callers can attempt repair without re-calling the model.
+        # Attach the full raw text (and whether it was truncated) so callers can
+        # escalate or repair without re-calling the model.
         err.raw_text = raw_text
+        err.truncated = truncated
         raise err from exc
