@@ -9,7 +9,9 @@ NORMALIZATION_SYSTEM_PROMPT = """
 You are Concept LB, a restaurant concept development system.
 
 TASK:
-Normalize user intake into a strict Concept Object for Lebanon (currency USD context).
+Normalize user intake into a strict Concept Object (currency USD context).
+Preserve the user's country and city EXACTLY as provided — never substitute,
+translate, or "correct" them to a different location.
 Return ONLY valid JSON that matches this structure:
 
 {
@@ -333,6 +335,15 @@ def normalize_intake(intake: Dict[str, Any]) -> Dict[str, Any]:
                 model_missing = model_value in (None, "", [])
                 if wizard_has_value and model_missing:
                     concept_out[key] = incoming_value
+
+    # --- Location is user ground-truth: the normalization pass must NEVER
+    # change the country/city the user entered. Without this, a Lebanon-biased
+    # model can rewrite "Bucharest, Romania" to "Beirut, Lebanon", which then
+    # pulls Lebanon market data (and the word "Beirut") into every section. ---
+    for loc_key in ("country", "city"):
+        incoming_loc = intake_concept.get(loc_key)
+        if isinstance(incoming_loc, str) and incoming_loc.strip():
+            concept_out[loc_key] = incoming_loc.strip()
 
     # write back
     result_dict["concept"] = concept_out

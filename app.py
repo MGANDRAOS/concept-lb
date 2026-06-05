@@ -324,7 +324,7 @@ def generate_html():
 
     assumptions_section = {
         "id": "assumptions_table_section",
-        "title": "Assumptions Table (Lebanon-Calibrated)",
+        "title": f"Assumptions Table ({concept.get('country') or 'Local'}-Calibrated)",
         "blocks": [
             {"type": "paragraph", "text": disclaimer},
             {
@@ -545,7 +545,7 @@ def _run_generation_job(job_id: str, intake: dict, chunk_size: int, max_workers:
 
             assumptions_section = {
                 "id": "assumptions_table_section",
-                "title": "Assumptions Table (Lebanon-Calibrated)",
+                "title": f"Assumptions Table ({concept.get('country') or 'Local'}-Calibrated)",
                 "blocks": [
                     {"type": "paragraph", "text": disclaimer},
                     {

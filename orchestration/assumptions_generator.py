@@ -8,7 +8,8 @@ ASSUMPTIONS_SYSTEM_PROMPT = """
 You are Concept LB.
 
 TASK:
-Generate a Lebanon-calibrated assumptions table for a restaurant concept in USD.
+Generate a market-calibrated assumptions table for a restaurant concept in USD,
+appropriate to the concept's country and city (provided in the concept object).
 
 STRICT OUTPUT:
 Return ONLY valid JSON:

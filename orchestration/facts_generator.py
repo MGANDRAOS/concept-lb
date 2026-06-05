@@ -22,7 +22,7 @@ _SYSTEM_PROMPT = (
     "(if uncertain, phrase as an industry observation), and specific "
     "rather than generic. Vary the topics across the list - don't stack "
     "five local-market facts in a row. Return JSON exactly like: "
-    "{{\"facts\": [{{\"text\": \"...\", \"topic\": \"LOCAL MARKET - BEIRUT\"}}, ...]}}. "
+    "{{\"facts\": [{{\"text\": \"...\", \"topic\": \"LOCAL MARKET - [CITY]\"}}, ...]}}. "
     "The topic tag is uppercase with dashes, short, and describes the fact's category "
     "plus an identifier like the city or cuisine name."
 )

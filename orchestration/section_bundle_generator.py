@@ -204,7 +204,7 @@ def generate_sections_bundle(
         - Equipment range (capex_budget_usd if missing, otherwise reference it)
         - Typical operating ratios (target_cogs_pct / channel mix)
 
-        Use realistic Lebanon-calibrated USD ranges.
+        Use realistic USD ranges appropriate to the concept's country and city.
         Do NOT claim real market citations.eal market citations.
         """
 
